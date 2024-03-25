@@ -24,7 +24,9 @@ ADDR_KBRD:
 # The address of the grid.
 ADDR_GRID:
     .word 0x10009000
-
+# The address of the three walls of the playing area.
+ADDR_WALL:
+    .word 0x1000a000
 
 ##############################################################################
 # Mutable Data
@@ -51,11 +53,13 @@ ADDR_GRID:
 # - $t5: 
 # - $t6: 
 # - $t7: the grid address
-# - $t8: the total offset of the starting pixel for storing grid
+# - $t8: the total offset of the starting pixel for storing grid/wall
+# - $t9: the walls address
 	
 main:
 # Initialize the game
 lw $t0, ADDR_DSPL # $t0 = base address for display
+lw $t9, ADDR_WALL
 
 # draw bottom border
 addi $a0, $zero, 5      # set x coordinate of line
@@ -89,7 +93,7 @@ jal draw_grid        # call the rectangle-drawing function
 # $a0 is x coordinate, $a1 is y coordinate, $a2 is the type of the tetromino,
 addi $a0, $zero, 10      # set x coordinate of line
 addi $a1, $zero, 10      # set y coordinate of line
-addi $a2, $zero, 'T'      # set length of line
+addi $a2, $zero, 'S'      # set length of line
 jal draw_tetromino
 
 j SKIP_FUNCTION
@@ -107,9 +111,11 @@ outer_top:
     
 inner_top:
     add $t3, $t1, $t2           # store the total offset of the starting pixel (relative to $t0)
+    add $t8, $t9, $t3           # store the total offset of the starting pixel for storing wall ($t9 + offset)
     add $t3, $t0, $t3           # calculate the location of the starting pixel ($t0 + offset)
     li $t4, 0x00ff00            # $t4 = green
     sw $t4, 0($t3)              # paint the current unit on the first row yellow
+    sw $t4, 0($t8)
     addi $t1, $t1, 4            # move horizontal offset to the right by one pixel
     beq $t1, $t5, inner_end     # break out of the line-drawing loop
     j inner_top                 # jump to the start of the inner loop
@@ -311,11 +317,13 @@ SKIP_FUNCTION:
 # - $t6: the base address for display
 # - $t7: the grid address 
 # - $t8: the first word for keyboard (1 for some keys are pressed, 0 for no key is pressed)
+# - $t9: the wall address
 # - $v0: the service number for 'syscall'
 # - $s0: the total offsets of the leftest pixel of the tetromino. If more, choose one
 # - $s1: the total offsets of the topmost pixel of the tetromino. If more, choose one
 # - $s2: the total offsets of the rightest pixel of the tetromino. If more, choose one
 # - $s3: the total offsets of the bottom pixel of the tetromino. If more, choose one
+# - $S4: the total time of sleeping
 
 game_loop:
 	# 1a. Check if key has been pressed
@@ -326,22 +334,28 @@ game_loop:
 	# 4. Sleep
 
     #5. Go back to 1
-    
-    li 	$v0, 32     # service number = sleep
-	li 	$a0, 1      # $a0 = the length of time to sleep in milliseconds = 1
-	syscall
 
     lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
     lw $t7, ADDR_GRID
     lw $t6, ADDR_DSPL
     lw $t8, 0($t0)                  # Load first word from keyboard
     beq $t8, 1, keyboard_input      # If first word 1, key is pressed
-    
+    li 	$v0, 32                     # service number = sleep
+	li 	$a0, 1                      # $a0 = the length of time to sleep in milliseconds
+	syscall
+	addi $s4, $s4, 1
+    beq $t8, 1, keyboard_input      # If first word 1, key is pressed
+    beq $s4, 50, gravity            # the gravity: drop 1 pixel for every 0.5 second
     b game_loop
+    
+gravity:
+    add $s4, $zero, $zero
+    j respond_to_S
 
 keyboard_input:                     # A key is pressed
     lw $a0, 4($t0)                  # Load second word from keyboard
     beq $a0, 0x71, respond_to_Q     # Check if the key Q was pressed
+    beq $a0, 0x77, respond_to_W     # Check if the key W was pressed
     beq $a0, 0x61, respond_to_A     # Check if the key A was pressed
     beq $a0, 0x73, respond_to_S     # Check if the key S was pressed
     beq $a0, 0x64, respond_to_D     # Check if the key D was pressed
@@ -352,7 +366,19 @@ respond_to_Q:
 	li $v0, 10                      # Quit gracefully
 	syscall
 
+respond_to_W:
+	li $v0, 1                      # ask system to print $a0 = 77
+	syscall
+	j game_loop
+
 respond_to_A:                       # let the tertromino move left for 1 pixel
+    # check if it moves against the left wall
+    subi $s0, $s0, 4                # calculate the new offset after moving left
+    add $t3, $t9, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
+    addi $s0, $s0, 4
+    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
     add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
@@ -388,6 +414,13 @@ respond_to_A:                       # let the tertromino move left for 1 pixel
 	j game_loop
 
 respond_to_S:                       # let the tertromino move down for 1 pixel
+    # check if it moves against the bottom wall
+    addi $s3, $s3, 128              # calculate the new offset after moving left
+    add $t3, $t9, $s3               # calculate the location of the leftest pixel in the ADDR_WALL
+    subi $s3, $s3, 128
+    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
     add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
@@ -423,6 +456,13 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
 	j game_loop
 	
 respond_to_D:                       # let the tertromino move right for 1 pixel
+    # check if it moves against the right wall
+    addi $s2, $s2, 4                # calculate the new offset after moving left
+    add $t3, $t9, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
+    subi $s2, $s2, 4
+    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
     add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
