@@ -335,10 +335,11 @@ game_loop:
 
     #5. Go back to 1
 
-    lw $t0, ADDR_KBRD               # $t0 = base address for keyboard
+    lw $a3, ADDR_KBRD               # $a3 = base address for keyboard
     lw $t7, ADDR_GRID
     lw $t6, ADDR_DSPL
-    lw $t8, 0($t0)                  # Load first word from keyboard
+    lw $s5, ADDR_TETR
+    lw $t8, 0($a3)                  # Load first word from keyboard
     beq $t8, 1, keyboard_input      # If first word 1, key is pressed
     li 	$v0, 32                     # service number = sleep
 	li 	$a0, 1                      # $a0 = the length of time to sleep in milliseconds
@@ -353,7 +354,7 @@ gravity:
     j respond_to_S
 
 keyboard_input:                     # A key is pressed
-    lw $a0, 4($t0)                  # Load second word from keyboard
+    lw $a0, 4($a3)                  # Load second word from keyboard
     beq $a0, 0x71, respond_to_Q     # Check if the key Q was pressed
     beq $a0, 0x77, respond_to_W     # Check if the key W was pressed
     beq $a0, 0x61, respond_to_A     # Check if the key A was pressed
@@ -374,125 +375,168 @@ respond_to_W:
 respond_to_A:                       # let the tertromino move left for 1 pixel
     # check if it moves against the left wall
     subi $s0, $s0, 4                # calculate the new offset after moving left
-    add $t3, $t9, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
+    add $t1, $t9, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
     addi $s0, $s0, 4
-    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
+    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
     
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t2, 0($t3)                  # draw the grid color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t2, 0($t1)                  # draw the grid color on this location in bitmap
     
     add $t1, $t7, $s1               # topmost
     lw $t2, 0($t1)
-    add $t3, $t6, $s1
-    sw $t2, 0($t3)
+    add $t1, $t6, $s1
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s2               # rightest
     lw $t2, 0($t1)
-    add $t3, $t6, $s2
-    sw $t2, 0($t3)
+    add $t1, $t6, $s2
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s3               # bottom
     lw $t2, 0($t1)
-    add $t3, $t6, $s3
-    sw $t2, 0($t3)
+    add $t1, $t6, $s3
+    sw $t2, 0($t1)
     
     subi $s0, $s0, 4                # calculate the new offset after moving left
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t4, 0($t3)                  # draw the color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t4, 0($t1)                  # draw the color on this location in bitmap
     subi $s1, $s1, 4                # topmost
-    add $t3, $t6, $s1
-    sw $t4, 0($t3)
+    add $t1, $t6, $s1
+    sw $t4, 0($t1)
     subi $s2, $s2, 4                # rightest
-    add $t3, $t6, $s2
-    sw $t4, 0($t3)
+    add $t1, $t6, $s2
+    sw $t4, 0($t1)
     subi $s3, $s3, 4                # bottom
-    add $t3, $t6, $s3
-    sw $t4, 0($t3)
+    add $t1, $t6, $s3
+    sw $t4, 0($t1)
 	j game_loop
 
 respond_to_S:                       # let the tertromino move down for 1 pixel
-    # check if it moves against the bottom wall
-    addi $s3, $s3, 128              # calculate the new offset after moving left
-    add $t3, $t9, $s3               # calculate the location of the leftest pixel in the ADDR_WALL
+    # check if it moves against the bottom wall and the landed tetrominos
+    addi $s0, $s0, 128              # calculate the new offset after moving down
+    add $s6, $s5, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
+    add $t1, $t9, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
+    subi $s0, $s0, 128
+    lw $t5, 0($s6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
+    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
+    
+    addi $s1, $s1, 128              # topmost
+    add $s6, $s5, $s1
+    add $t1, $t9, $s1
+    subi $s1, $s1, 128
+    lw $t5, 0($s6)             
+    bne $zero, $t5, land
+    lw $t5, 0($t1)
+    bne $zero, $t5, land
+    
+    addi $s2, $s2, 128              # rightest
+    add $s6, $s5, $s2
+    add $t1, $t9, $s2
+    subi $s2, $s2, 128
+    lw $t5, 0($s6)             
+    bne $zero, $t5, land
+    lw $t5, 0($t1)
+    bne $zero, $t5, land
+    
+    addi $s3, $s3, 128              # bottom
+    add $s6, $s5, $s3
+    add $t1, $t9, $s3
     subi $s3, $s3, 128
-    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
-    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    lw $t5, 0($s6)             
+    bne $zero, $t5, land
+    lw $t5, 0($t1)
+    bne $zero, $t5, land
 
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t2, 0($t3)                  # draw the grid color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t2, 0($t1)                  # draw the grid color on this location in bitmap
     
     add $t1, $t7, $s1               # topmost
     lw $t2, 0($t1)
-    add $t3, $t6, $s1
-    sw $t2, 0($t3)
+    add $t1, $t6, $s1
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s2               # rightest
     lw $t2, 0($t1)
-    add $t3, $t6, $s2
-    sw $t2, 0($t3)
+    add $t1, $t6, $s2
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s3               # bottom
     lw $t2, 0($t1)
-    add $t3, $t6, $s3
-    sw $t2, 0($t3)
+    add $t1, $t6, $s3
+    sw $t2, 0($t1)
     
     addi $s0, $s0, 128              # calculate the new offset after moving down
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t4, 0($t3)                  # draw the color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t4, 0($t1)                  # draw the color on this location in bitmap
     addi $s1, $s1, 128              # topmost
-    add $t3, $t6, $s1
-    sw $t4, 0($t3)
+    add $t1, $t6, $s1
+    sw $t4, 0($t1)
     addi $s2, $s2, 128              # rightest
-    add $t3, $t6, $s2
-    sw $t4, 0($t3)
+    add $t1, $t6, $s2
+    sw $t4, 0($t1)
     addi $s3, $s3, 128              # bottom
-    add $t3, $t6, $s3
-    sw $t4, 0($t3)
+    add $t1, $t6, $s3
+    sw $t4, 0($t1)
 	j game_loop
 	
 respond_to_D:                       # let the tertromino move right for 1 pixel
     # check if it moves against the right wall
     addi $s2, $s2, 4                # calculate the new offset after moving left
-    add $t3, $t9, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
+    add $t1, $t9, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
     subi $s2, $s2, 4
-    lw $t5, 0($t3)                  # load the color of this position in ADDR_WALL
+    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
     
     add $t1, $t7, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t2, 0($t3)                  # draw the grid color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t2, 0($t1)                  # draw the grid color on this location in bitmap
     
     add $t1, $t7, $s1               # topmost
     lw $t2, 0($t1)
-    add $t3, $t6, $s1
-    sw $t2, 0($t3)
+    add $t1, $t6, $s1
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s2               # rightest
     lw $t2, 0($t1)
-    add $t3, $t6, $s2
-    sw $t2, 0($t3)
+    add $t1, $t6, $s2
+    sw $t2, 0($t1)
     
     add $t1, $t7, $s3               # bottom
     lw $t2, 0($t1)
-    add $t3, $t6, $s3
-    sw $t2, 0($t3)
+    add $t1, $t6, $s3
+    sw $t2, 0($t1)
     
     addi $s0, $s0, 4                # calculate the new offset after moving right
-    add $t3, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
-    sw $t4, 0($t3)                  # draw the color on this location in bitmap
+    add $t1, $t6, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t4, 0($t1)                  # draw the color on this location in bitmap
     addi $s1, $s1, 4                # topmost
-    add $t3, $t6, $s1
-    sw $t4, 0($t3)
+    add $t1, $t6, $s1
+    sw $t4, 0($t1)
     addi $s2, $s2, 4                # rightest
-    add $t3, $t6, $s2
-    sw $t4, 0($t3)
+    add $t1, $t6, $s2
+    sw $t4, 0($t1)
     addi $s3, $s3, 4                # bottom
-    add $t3, $t6, $s3
-    sw $t4, 0($t3)
+    add $t1, $t6, $s3
+    sw $t4, 0($t1)
 	j game_loop
+	
+land:
+    add $t1, $s5, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
+    sw $t4, 0($t1)
+    add $t1, $s5, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
+    sw $t4, 0($t1)
+    add $t1, $s5, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
+    sw $t4, 0($t1)
+    add $t1, $s5, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
+    sw $t4, 0($t1)
+    
+    
+    j draw_tetromino
