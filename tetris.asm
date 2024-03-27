@@ -357,6 +357,33 @@ respond_to_A:                       # let the tertromino move left for 1 pixel
     lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
     
+    subi $s1, $s1, 4                # topmost
+    add $t4, $a3, $s1
+    add $t1, $s7, $s1
+    addi $s1, $s1, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
+    
+    subi $s2, $s2, 4                # rightest
+    add $t4, $a3, $s2
+    add $t1, $s7, $s2
+    addi $s2, $s2, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
+    
+    subi $s3, $s3, 4                # bottom
+    add $t4, $a3, $s3
+    add $t1, $s7, $s3
+    addi $s3, $s3, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
+    
     add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
     add $t1, $s4, $s0               # calculate the location of the leftest pixel in the bitmap
@@ -465,14 +492,41 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
 	
 respond_to_D:                       # let the tertromino move right for 1 pixel
     # check if it moves against the right wall
-    addi $s2, $s2, 4                # calculate the new offset after moving left
+    addi $s0, $s0, 4                # calculate the new offset after moving left
     add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
-    add $t1, $s7, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
-    subi $s2, $s2, 4
+    add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
+    subi $s0, $s0, 4
     lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
     bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
     lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    addi $s1, $s1, 4                # topmost
+    add $t4, $a3, $s1
+    add $t1, $s7, $s1
+    subi $s1, $s1, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
+    
+    addi $s2, $s2, 4                # rightest
+    add $t4, $a3, $s2
+    add $t1, $s7, $s2
+    subi $s2, $s2, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
+    
+    addi $s3, $s3, 4                # bottom
+    add $t4, $a3, $s3
+    add $t1, $s7, $s3
+    subi $s3, $s3, 4
+    lw $t5, 0($t4)
+    bne $zero, $t5, game_loop
+    lw $t5, 0($t1)
+    bne $zero, $t5, game_loop
     
     add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
@@ -511,10 +565,32 @@ respond_to_D:                       # let the tertromino move right for 1 pixel
 land:
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    add $t5, $zero, $s0             # the offest should be loaded into check_line function
+    jal check_line
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    add $t5, $zero, $s1             # the offest should be loaded into check_line function
+    jal check_line
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    add $t5, $zero, $s2             # the offest should be loaded into check_line function
+    jal check_line
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    add $t5, $zero, $s3             # the offest should be loaded into check_line function
+    jal check_line
     j draw_tetromino
+    
+check_line:
+    addi $t1, $zero, 128            # the number of pixels in one line
+    div $t5, $t1                    # to figure out which line that the tetromino is in
+    mfhi $t2
+    sub $t3, $s0, $t2
+    add $t3, $a3, $t3               # let $t3 = the address of the first value of this line
+    lw $t4, 0($t3)
+    beq $t4, 14, remove_line        # if there are pixels in this line, remove
+    addi $t4, $t4, 1                # else, add
+    sw $t4, 0($t3)
+    jr $ra
+
+remove_line:
