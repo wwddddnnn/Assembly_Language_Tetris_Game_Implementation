@@ -105,7 +105,7 @@ addi $t2, $zero, 14      # set length of line
 addi $t3, $zero, 30      # set height of line
 jal draw_grid        # call the rectangle-drawing function
 
-# $a0 is x coordinate, $a1 is y coordinate, $a2 is the type of the tetromino,
+# $t0 is x coordinate, $t1 is y coordinate, $a2 is the type of the tetromino,
 addi $t0, $zero, 10      # set x coordinate of line
 addi $t1, $zero, 10      # set y coordinate of line
 addi $a2, $zero, 'S'      # set length of line
@@ -158,7 +158,7 @@ outer_top_grid:
     j end_out
     
 if_out:
-    li $a1, 0x1b1b1b    # change $t4 to light grey 
+    li $a1, 0x1b1b1b    # change $a1 to light grey 
     
 end_out:
     sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
@@ -195,28 +195,7 @@ outer_end_grid:
     
     jr $ra                      # return to calling program
 
-
-
-# The Mutable Data for draw_tetromio: 
-# - $a0: the x coordinate.
-# - $a1: the y coordinate.
-# - $a2: the type of the tetromino
-# - $a3: ?
-# - $t0: the base address for display
-# - $t1: 
-# - $t2: 
-# - $t3: the starting point?
-# - $t4: the colour value to draw on the bitmap (red)
-# - $t5: 
-# - $t6:
-# - $t7: the offset of the starting pixel
-# - $s0: the total offsets of the leftest pixel of the tetromino. If more, choose one
-# - $s1: the total offsets of the topmost pixel of the tetromino. If more, choose one
-# - $s2: the total offsets of the rightest pixel of the tetromino. If more, choose one
-# - $s3: the total offsets of the bottom pixel of the tetromino. If more, choose one
-
-
-# $a0 is x coordinate, $a1 is the color value to draw on the bitmap, $a2 is the type of the tetromino, 
+# $a1 is the color value to draw on the bitmap, $a2 is the type of the tetromino, 
 draw_tetromino:
     li $a1, 0xff0000        # $a1 = red
     addi $t3, $zero, 52     # the started point is fixed in the middle of the rectangle
