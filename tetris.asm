@@ -108,7 +108,7 @@ jal draw_grid        # call the rectangle-drawing function
 # $t0 is x coordinate, $t1 is y coordinate, $a2 is the type of the tetromino,
 addi $t0, $zero, 10      # set x coordinate of line
 addi $t1, $zero, 10      # set y coordinate of line
-addi $a2, $zero, 'S'      # set length of line
+addi $a2, $zero, 'O'      # set length of line
 jal draw_tetromino
 
 j SKIP_FUNCTION
@@ -213,7 +213,7 @@ draw_tetromino:
     addi $s2, $t7, 132
     addi $s3, $t7, 128
     
-    addi $a2, $zero, 'I'    # to make the next tetromino be different with the current one.
+    # addi $a2, $zero, 'I'    # to make the next tetromino be different with the current one.
     j end_tetromino
     
 I:
@@ -565,32 +565,50 @@ respond_to_D:                       # let the tertromino move right for 1 pixel
 land:
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    add $t5, $zero, $s0             # the offest should be loaded into check_line function
     jal check_line
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    add $t5, $zero, $s1             # the offest should be loaded into check_line function
     jal check_line
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    add $t5, $zero, $s2             # the offest should be loaded into check_line function
     jal check_line
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    add $t5, $zero, $s3             # the offest should be loaded into check_line function
     jal check_line
     j draw_tetromino
     
 check_line:
-    addi $t1, $zero, 128            # the number of pixels in one line
-    div $t5, $t1                    # to figure out which line that the tetromino is in
-    mfhi $t2
-    sub $t3, $s0, $t2
-    add $t3, $a3, $t3               # let $t3 = the address of the first value of this line
-    lw $t4, 0($t3)
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # else, store the new amount of landed pixels
     beq $t4, 14, remove_line        # if there are pixels in this line, remove
-    addi $t4, $t4, 1                # else, add
-    sw $t4, 0($t3)
     jr $ra
 
 remove_line:
+    beq $t2, 0x1000b000, end_remove_line    # if $t2 is the first value in the bitmap, return
+    subi $t2, $t2, 36                       # set $t2 = the last pixel in the rectangle in the last line
+    addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
+    jal remove_each_pixel
+
+end_remove_line:
+    jr $ra
+    
+remove_each_pixel:
+    addi $t4, $t2, 128              # the position in the next line
+    lw $t5, 0($t2)                  # find the value in this postion
+    sw $t5, 0($t4)                  # load the value from the last line in ADDR_TETR
+    sub $t2, $t2, $a3               # find the offset for calculate the postion in ADDR_DSPL
+    add $t2, $t2, $s4
+    addi $t4, $t2, 128
+    # li $t6, 0x8DEEEE
+    # li $t7, 0xFFE4E1
+    lw $t5, 0($t2)
+    sw $t5, 0($t4)
+    sub $t2, $t2, $s4
+    add $t2, $t2, $a3
+    addi $t3, $t3, 1
+    sub $t2, $t2, 4
+    bne $t3, 23, remove_each_pixel
+    j remove_line
