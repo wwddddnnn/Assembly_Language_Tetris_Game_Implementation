@@ -915,12 +915,15 @@ land:
     jal check_line
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    lw $ra, 0($sp)
     jal check_line
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    lw $ra, 0($sp)
     jal check_line
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    lw $ra, 0($sp)
     jal check_line
     lw $ra, 0($sp)
     addi $sp, $sp, 4
@@ -937,4 +940,32 @@ check_line:
     jr $ra
     
 remove_line:
+    beq $t2, 0x1000b000, end_remove_line    # if $t2 is the first value in the bitmap, return
+    # subi $t2, $t2, 52                       # set $t2 = the last pixel in the rectangle in the last line
+    addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
+    # addi $sp, $sp, -4
+    # sw $ra, 0($sp)
+    j remove_each_pixel
+    # lw $ra, 0($sp)
+    # addi $sp, $sp, 4
+    jr $ra
     
+remove_each_pixel:
+    addi $t4, $t2, 128              # the position in the next line
+    lw $t5, 0($t2)                  # find the value in this postion
+    sw $t5, 0($t4)                  # load the value from the last line in ADDR_TETR
+    sub $t2, $t2, $a3               # find the offset for calculate the postion in ADDR_DSPL
+    add $t2, $t2, $s4
+    addi $t4, $t2, 128
+    lw $t5, 0($t2)
+    sw $t5, 0($t4)
+    sub $t2, $t2, $s4
+    add $t2, $t2, $a3
+    addi $t3, $t3, 1
+    sub $t2, $t2, 4
+    beq $t2, 0x1000b000, end_remove_line
+    bne $t3, 20, remove_each_pixel
+    j remove_line
+    
+end_remove_line:
+    jr $ra
