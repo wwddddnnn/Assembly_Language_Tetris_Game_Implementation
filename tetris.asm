@@ -347,10 +347,13 @@ respond_to_W:
 	j game_loop
 
 respond_to_A:                       # let the tertromino move left for 1 pixel
-    # check if it moves against the left wall
+    # check if it moves against the left wall and landed tetrominoes
     subi $s0, $s0, 4                # calculate the new offset after moving left
+    add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
     add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
     addi $s0, $s0, 4
+    lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
     lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
     
@@ -395,7 +398,7 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
     add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
     subi $s0, $s0, 128
     lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
-    bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
+    bne $zero, $t5, land            # # if this postion has landed tetrominoes(has color), the tetromino is landed.
     lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
     
@@ -463,8 +466,11 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
 respond_to_D:                       # let the tertromino move right for 1 pixel
     # check if it moves against the right wall
     addi $s2, $s2, 4                # calculate the new offset after moving left
+    add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
     add $t1, $s7, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
     subi $s2, $s2, 4
+    lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
     lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
     bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
     
