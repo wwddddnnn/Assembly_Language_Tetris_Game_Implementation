@@ -908,15 +908,33 @@ land:
     li $a0, 1
     li $a1, 0xff0000
     
-
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    jal check_line
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    jal check_line
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    jal check_line
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
-
+    jal check_line
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
     
     j draw_tetromino
+    
+check_line:
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # store the new amount of landed pixels
+    beq $t4, 14, remove_line        # if there are 14 pixels in this line, remove
+    jr $ra
+    
+remove_line:
+    
