@@ -37,7 +37,7 @@ ADDR_TETR:
 # - $a1: the color value to draw on the bitmap
 # - $a2: the type of the tetromino
 # - $a3: the address of landed tetrominos (ADDR_TETR)
-# - $t0:
+# - $t0: how many milisecond has passed
 # - $t1:
 # - $t2:
 # - $t3:
@@ -108,7 +108,7 @@ jal draw_grid        # call the rectangle-drawing function
 # $t0 is x coordinate, $t1 is y coordinate, $a2 is the type of the tetromino,
 addi $t0, $zero, 10      # set x coordinate of line
 addi $t1, $zero, 10      # set y coordinate of line
-addi $a2, $zero, 'S'      # set length of line
+# addi $a2, $zero, 'T'      # set length of line
 jal draw_tetromino
 
 j SKIP_FUNCTION
@@ -213,7 +213,7 @@ draw_tetromino:
     addi $s2, $t7, 132
     addi $s3, $t7, 128
     
-    addi $a2, $zero, 'I'    # to make the next tetromino be different with the current one.
+    addi $a2, $zero, 'O'    # to make the next tetromino be different with the current one.
     j end_tetromino
     
 I:
@@ -227,7 +227,7 @@ I:
     addi $s2, $t7, 256
     addi $s3, $t7, 384
     
-    addi $a2, $zero, 'S'
+    addi $a2, $zero, 'I'
     j end_tetromino
     
 S:
@@ -242,7 +242,7 @@ S:
     addi $s3, $t7, 128
     
     
-    addi $a2, $zero, 'Z'
+    addi $a2, $zero, 'S'
     j end_tetromino
     
 Z:
@@ -256,7 +256,7 @@ Z:
     addi $s2, $t7, 136
     addi $s3, $t7, 132
     
-    addi $a2, $zero, 'L'
+    addi $a2, $zero, 'Z'
     j end_tetromino
     
 L:
@@ -270,7 +270,7 @@ L:
     addi $s2, $t7, 260
     addi $s3, $t7, 256
     
-    addi $a2, $zero, 'J'
+    addi $a2, $zero, 'L'
     j end_tetromino
     
 J:
@@ -284,7 +284,7 @@ J:
     addi $s2, $t7, 128
     addi $s3, $t7, 256
     
-    addi $a2, $zero, 'T'
+    addi $a2, $zero, 'J'
     j end_tetromino
     
 T:
@@ -297,13 +297,333 @@ T:
     addi $s2, $t7, 8
     addi $s3, $t7, 132
     
-    addi $a2, $zero, 'O'
+    addi $a2, $zero, 'T'
     
 end_tetromino:
+    jr $ra                      # return to calling program
+
+# check if t1, t2, t3, t4 (new) transfering from s0, s1, s2, s3 (old) is valid tansfer
+Check_valid_position_left_right:
+    #t1
+    #check if t1 overlap with any previous pixel
+    beq $t1, $s0, check_t2
+    beq $t1, $s1, check_t2
+    beq $t1, $s2, check_t2
+    beq $t1, $s3, check_t2
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t1               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t1               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t2:
+    #t2
+    #check if t2 overlap with any previous pixel
+    beq $t2, $s0, check_t3
+    beq $t2, $s1, check_t3
+    beq $t2, $s2, check_t3
+    beq $t2, $s3, check_t3
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t2               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t2               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t3:
+    #t3
+    #check if t3 overlap with any previous pixel
+    beq $t3, $s0, check_t4
+    beq $t3, $s1, check_t4
+    beq $t3, $s2, check_t4
+    beq $t3, $s3, check_t4
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t3               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t3               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t4:
+     #t4
+    #check if t4 overlap with any previous pixel
+    beq $t4, $s0, check_end
+    beq $t4, $s1, check_end
+    beq $t4, $s2, check_end
+    beq $t4, $s3, check_end
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t4               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t4               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+        
+    check_end:
+    jr $ra                      # return to calling program
+
+
+# check if t1, t2, t3, t4 (new) transfering from s0, s1, s2, s3 (old) is valid tansfer
+Check_valid_position_down:
+    #t1
+    #check if t1 overlap with any previous pixel
+    beq $t1, $s0, check_t2_d
+    beq $t1, $s1, check_t2_d
+    beq $t1, $s2, check_t2_d
+    beq $t1, $s3, check_t2_d
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t1               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, land       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t1               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, land       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t2_d:
+    #t2
+    #check if t2 overlap with any previous pixel
+    beq $t2, $s0, check_t3_d
+    beq $t2, $s1, check_t3_d
+    beq $t2, $s2, check_t3_d
+    beq $t2, $s3, check_t3_d
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t2               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, land       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t2               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, land       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t3_d:
+    #t3
+    #check if t3 overlap with any previous pixel
+    beq $t3, $s0, check_t4_d
+    beq $t3, $s1, check_t4_d
+    beq $t3, $s2, check_t4_d
+    beq $t3, $s3, check_t4_d
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t3               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, land       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t3               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, land       # if this postion is the wall(has color), ignore the pressing.
+    
+    check_t4_d:
+     #t4
+    #check if t4 overlap with any previous pixel
+    beq $t4, $s0, check_end_d
+    beq $t4, $s1, check_end_d
+    beq $t4, $s2, check_end_d
+    beq $t4, $s3, check_end_d
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t6, $a3, $t4               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_TETR
+    bne $zero, $t5, land       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    add $t6, $s7, $t4               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t5, 0($t6)                  # load the color of this position in ADDR_WALL
+    bne $zero, $t5, land       # if this postion is the wall(has color), ignore the pressing.
+        
+    check_end_d:
+    jr $ra                      # return to calling program
+    
+# this function paint s0, s1, s2, s3 with the tetromino colour -> fraw tetromino with given location
+Draw_tetromino_with_location:
+    add $t1, $s4, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $a1, 0($t1)
+    add $t1, $s4, $s1
+    sw $a1, 0($t1)
+    add $t1, $s4, $s2
+    sw $a1, 0($t1)
+    add $t1, $s4, $s3
+    sw $a1, 0($t1)
+    jr $ra                      # return to calling program
+    
+
+# earese current tetromino to background color
+Delete_current_tetrominos:
+    add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
+    lw $t2, 0($t1)                  # load the grid color of this location
+    add $t1, $s4, $s0               # calculate the location of the leftest pixel in the bitmap
+    sw $t2, 0($t1)                  # draw the grid color on this location in bitmap
+    
+    add $t1, $s6, $s1               # topmost
+    lw $t2, 0($t1)
+    add $t1, $s4, $s1
+    sw $t2, 0($t1)
+    
+    add $t1, $s6, $s2               # rightest
+    lw $t2, 0($t1)
+    add $t1, $s4, $s2
+    sw $t2, 0($t1)
+    
+    add $t1, $s6, $s3               # bottom
+    lw $t2, 0($t1)
+    add $t1, $s4, $s3
+    sw $t2, 0($t1)
+    
+    jr $ra                      # return to calling program
+    
+
+rotate_O:
+    j rotate_end
+    
+rotate_I:
+    addi $t1, $s1, 128
+    beq $t1, $s0, rotate_I_horizontal # check if I is vertical
+    # if I is horizatonl -> rotate vertical
+    addi $s0, $s1, 128
+    addi $s2, $s1, 256
+    addi $s3, $s1, 384
+    j rotate_end
+    
+    rotate_I_horizontal:
+    addi $s0, $s1, 4
+    addi $s2, $s1, 8
+    addi $s3, $s1, 12
+    j rotate_end
+
+    
+rotate_S:
+    addi $t1, $s1, 4
+    beq $t1, $s2, rotate_S_vertical # check if S is horizontal
+    # if vertical -> horizontal
+    subi $s1, $s0, 124
+    subi $s2, $s0, 120
+    addi $s3, $s0, 4
+    j rotate_end
+    
+    # if horizatonl -> rotate vertical
+    rotate_S_vertical:
+    subi $s1, $s0, 128
+    addi $s2, $s0, 4
+    addi $s3, $s0, 132
+    j rotate_end
+    
+rotate_Z:
+    addi $t1, $s0, 4
+    beq $t1, $s1, rotate_Z_vertical # check if S is horizontal
+    # if vertical -> horizontal
+    addi $s1, $s0, 4
+    addi $s2, $s0, 132
+    addi $s3, $s0, 136
+    j rotate_end
+    
+    # if horizatonl -> rotate vertical
+    rotate_Z_vertical:
+    addi $s1, $s0, 128
+    addi $s2, $s0, 124
+    addi $s3, $s0, 252
+    j rotate_end
+    
+rotate_L:
+    addi $t1, $s3, 4
+    beq $t1, $s2, rotate_L_type_1 # check if L is type 1
+    beq $t1, $s0, rotate_L_type_2 # check if L is type 2
+    subi $t1, $s3, 4
+    beq $t1, $s2, rotate_L_type_3 # check if L is type 3
+    
+    # L is type 4
+    addi $s2, $s3, 4
+    subi $s0, $s3, 128
+    subi $s1, $s3, 256
+    j rotate_end
+
+    rotate_L_type_1:
+    addi $s0, $s3, 4
+    addi $s1, $s3, 8
+    addi $s2, $s3, 128
+    j rotate_end
+    
+    rotate_L_type_2:
+    addi $s0, $s3, 128
+    addi $s1, $s3, 256
+    subi $s2, $s3, 4
+    j rotate_end
+    
+    rotate_L_type_3:
+    subi $s0, $s3, 4
+    subi $s1, $s3, 8
+    subi $s2, $s3, 128
+    j rotate_end
+    
+    
+rotate_J:
+    subi $t1, $s3, 4
+    beq $t1, $s0, rotate_J_type_1 # check if L is type 1
+    beq $t1, $s2, rotate_J_type_4 # check if L is type 2
+    addi $t1, $s3, 4
+    beq $t1, $s0, rotate_J_type_3 # check if L is type 3
+    
+    # L is type 2
+    addi $s0, $s3, 4
+    addi $s2, $s3, 128
+    addi $s1, $s3, 256
+    j rotate_end
+
+    rotate_J_type_1:
+    subi $s0, $s3, 128
+    addi $s1, $s3, 8
+    addi $s2, $s3, 4
+    j rotate_end
+    
+    rotate_J_type_3:
+    addi $s0, $s3, 128
+    subi $s1, $s3, 8
+    subi $s2, $s3, 4
+    j rotate_end
+    
+    rotate_J_type_4:
+    subi $s0, $s3, 4
+    subi $s1, $s3, 256
+    subi $s2, $s3, 128
+    j rotate_end
+    
+rotate_T:
+    addi $t1, $s1, 4
+    beq $t1, $s0, rotate_T_type_3 # check if L is type 1
+    beq $t1, $s2, rotate_T_type_1 # check if L is type 2
+    beq $t1, $s3, rotate_T_type_4 # check if L is type 3
+    
+    # T is type 2
+    addi $s0, $s1, 4
+    subi $s2, $s1, 4
+    subi $s3, $s1, 128
+    j rotate_end
+
+    rotate_T_type_1:
+    addi $s2, $s1, 128
+    subi $s3, $s1, 4
+    subi $s0, $s1, 128
+    j rotate_end
+    
+    rotate_T_type_3:
+    addi $s3, $s1, 4
+    subi $s2, $s1, 128
+    addi $s0, $s1, 128
+    j rotate_end
+    
+    rotate_T_type_4:
+    addi $s2, $s1, 4
+    addi $s3, $s1, 128
+    subi $s0, $s1, 4
+    j rotate_end
+    
+rotate_end:
+    jal Draw_tetromino_with_location
+
+    j end_rotate
 
     
 SKIP_FUNCTION:  
 
+#################################################################################################################################################
+#################################################################################################################################################
+#################################################################################################################################################
 game_loop:
 	# 1a. Check if key has been pressed
     # 1b. Check which key has been pressed
@@ -311,12 +631,12 @@ game_loop:
 	# 2b. Update locations (paddle, ball)
 	# 3. Draw the screen
 	# 4. Sleep
-
     #5. Go back to 1
+    
     lw $t8, 0($s5)                  # Load first word from keyboard
     beq $t8, 1, keyboard_input      # If first word 1, key is pressed
-    li 	$v0, 32                     # service number = sleep
-	li 	$a0, 1                      # $a0 = the length of time to sleep in milliseconds
+    li $v0, 32                     # service number = sleep
+	li $a0, 1                      # $a0 = the length of time to sleep in milliseconds
 	syscall
 	addi $t0, $t0, 1
     beq $t8, 1, keyboard_input      # If first word 1, key is pressed
@@ -340,22 +660,39 @@ keyboard_input:                     # A key is pressed
 respond_to_Q:
 	li $v0, 10                      # Quit gracefully
 	syscall
-
+	
 respond_to_W:
-	li $v0, 1                      # ask system to print $a0 = 77
-	syscall
-	j game_loop
+    jal Delete_current_tetrominos
+    
+    beq $a2, 'O', rotate_O
+	beq $a2, 'I', rotate_I
+	beq $a2, 'S', rotate_S
+	beq $a2, 'Z', rotate_Z
+	beq $a2, 'L', rotate_L
+	beq $a2, 'J', rotate_J
+	beq $a2, 'T', rotate_T
+    end_rotate:
+    j game_loop
 
 respond_to_A:                       # let the tertromino move left for 1 pixel
     # check if it moves against the left wall and landed tetrominoes
-    subi $s0, $s0, 4                # calculate the new offset after moving left
-    add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
-    add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
-    addi $s0, $s0, 4
-    lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
-    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
-    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
-    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    # calculate the new offset after moving left
+    subi $t1, $s0, 4
+    subi $t2, $s1, 4
+    subi $t3, $s2, 4
+    subi $t4, $s3, 4
+    jal Check_valid_position_left_right
+
+    # subi $s0, $s0, 4                # calculate the new offset after moving left
+    # add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
+    # add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
+    # addi $s0, $s0, 4
+    # lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
+    # bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    # lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
+    # bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    # jal Delete_current_tetrominos
     
     add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
@@ -392,15 +729,21 @@ respond_to_A:                       # let the tertromino move left for 1 pixel
 	j game_loop
 
 respond_to_S:                       # let the tertromino move down for 1 pixel
-    # check if it moves against the bottom wall and the landed tetrominos
-    addi $s0, $s0, 128              # calculate the new offset after moving down
-    add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
-    add $t1, $s7, $s0               # calculate the location of the leftest pixel in the ADDR_WALL
-    subi $s0, $s0, 128
-    lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
-    bne $zero, $t5, land            # # if this postion has landed tetrominoes(has color), the tetromino is landed.
-    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
-    bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
+    #check if it moves against the bottom wall and the landed tetrominos
+    addi $t1, $s0, 128
+    addi $t2, $s1, 128
+    addi $t3, $s2, 128
+    addi $t4, $s3, 128
+    jal Check_valid_position_down
+
+    # addi $s3, $s3, 128              # calculate the new offset after moving down
+    # add $t4, $a3, $s3               # calculate the location of the leftest pixel in the ADDR_TETR
+    # add $t1, $s7, $s3               # calculate the location of the leftest pixel in the ADDR_WALL
+    # subi $s3, $s3, 128
+    # lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
+    # bne $zero, $t5, land            # # if this postion has landed tetrominoes(has color), the tetromino is landed.
+    # lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
+    # bne $zero, $t5, land            # if this postion is the wall(has color), the tetromino is landed.
     
     addi $s1, $s1, 128              # topmost
     add $t4, $a3, $s1
@@ -428,6 +771,8 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
     bne $zero, $t5, land
     lw $t5, 0($t1)
     bne $zero, $t5, land
+    
+    # jal Delete_current_tetrominos
 
     add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
@@ -465,14 +810,23 @@ respond_to_S:                       # let the tertromino move down for 1 pixel
 	
 respond_to_D:                       # let the tertromino move right for 1 pixel
     # check if it moves against the right wall
-    addi $s2, $s2, 4                # calculate the new offset after moving left
-    add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
-    add $t1, $s7, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
-    subi $s2, $s2, 4
-    lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
-    bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
-    lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
-    bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    # calculate the new offset after moving left
+    addi $t1, $s0, 4
+    addi $t2, $s1, 4
+    addi $t3, $s2, 4
+    addi $t4, $s3, 4
+    jal Check_valid_position_left_right
+
+    # addi $s2, $s2, 4                # calculate the new offset after moving left
+    # add $t4, $a3, $s0               # calculate the location of the leftest pixel in the ADDR_TETR
+    # add $t1, $s7, $s2               # calculate the location of the leftest pixel in the ADDR_WALL
+    # subi $s2, $s2, 4
+    # lw $t5, 0($t4)                  # load the color of this position in ADDR_TETR
+    # bne $zero, $t5, game_loop       # if this postion has landed tetrominoes(has color), ignore the pressing.
+    # lw $t5, 0($t1)                  # load the color of this position in ADDR_WALL
+    # bne $zero, $t5, game_loop       # if this postion is the wall(has color), ignore the pressing.
+    
+    # jal Delete_current_tetrominos
     
     add $t1, $s6, $s0               # calculate the location of the leftest pixel in the grid
     lw $t2, 0($t1)                  # load the grid color of this location
@@ -507,8 +861,54 @@ respond_to_D:                       # let the tertromino move right for 1 pixel
     add $t1, $s4, $s3
     sw $a1, 0($t1)
 	j game_loop
+   
 	
 land:
+    #generate random tetromino type
+    # generate random number use syscall
+    li $v0, 42
+    li $a0, 0
+    li $a1, 7
+    syscall
+    beq $a0, 0, random_0
+    beq $a0, 1, random_1
+    beq $a0, 2, random_2
+    beq $a0, 3, random_3
+    beq $a0, 4, random_4
+    beq $a0, 5, random_5
+    beq $a0, 6, random_6
+    j random_end
+    
+    random_0:
+    addi $a2, $zero, 'O'
+    j random_end
+    random_1:
+    addi $a2, $zero, 'I'
+    j random_end
+    random_2:
+    addi $a2, $zero, 'S'
+    j random_end
+    random_3:
+    addi $a2, $zero, 'Z'
+    j random_end
+    random_4:
+    addi $a2, $zero, 'L'
+    j random_end
+    random_5:
+    addi $a2, $zero, 'J'
+    j random_end
+    random_6:
+    addi $a2, $zero, 'T'
+    j random_end
+    
+    random_end:
+    
+    # change back
+    li $v0, 32
+    li $a0, 1
+    li $a1, 0xff0000
+    
+
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
@@ -517,4 +917,6 @@ land:
     sw $a1, 0($t1)
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
+
+    
     j draw_tetromino
