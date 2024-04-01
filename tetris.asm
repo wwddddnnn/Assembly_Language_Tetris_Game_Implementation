@@ -30,6 +30,13 @@ ADDR_WALL:
 # The address of the landed tetrominos
 ADDR_TETR:
     .word 0x1000b000
+# The address of current tetrominos
+ADDR_CURRENT:
+    .word 0x1000C000
+# The address of next tetrominos
+ADDR_NEXT:
+    .word 0x1000d000
+
     
 # - $v0: the service number of 'syscall'
 # - $v1:
@@ -70,12 +77,18 @@ ADDR_TETR:
 	# Run the Tetris game.
 	
 main:
+
 # Initialize the game
 lw $s4, ADDR_DSPL       # $s4 = base address for display
 lw $s5, ADDR_KBRD       # $s5 = address of keyboard
 lw $s6, ADDR_GRID       # $s6 = address of grid
 lw $s7, ADDR_WALL       # $s7 = address of walls
 lw $a3, ADDR_TETR       # $a3 = address of landed tetrominos
+
+addi $a2, $zero, 'O'
+sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
+
+jal clear_borad
 
 # draw bottom border
 addi $t0, $zero, 5      # $t0 = x coordinate of line
@@ -106,10 +119,14 @@ addi $t3, $zero, 30      # set height of line
 jal draw_grid        # call the rectangle-drawing function
 
 # $t0 is x coordinate, $t1 is y coordinate, $a2 is the type of the tetromino,
-addi $t0, $zero, 10      # set x coordinate of line
-addi $t1, $zero, 10      # set y coordinate of line
-# addi $a2, $zero, 'T'      # set length of line
 jal draw_tetromino
+
+# Draw next tetromino on the side
+addi $t0, $zero, 25      # set x coordinate of line
+addi $t1, $zero, 10      # set y coordinate of line
+lw $a2, ADDR_NEXT
+jal draw_next_tetromino
+
 
 j SKIP_FUNCTION
 
@@ -119,85 +136,86 @@ draw_rectangle:
     sll $t5, $t3, 7         # convert height of rectangle from pixels to rows of bytes (by multiplying $t3 by 128)
     add $t5, $t4, $t5       # calculate value of $t4 for the last line in the rectangle.
     
-outer_top:
-    sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
-    sll $t7, $t2, 2         # convert length of line from pixels to bytes (by multiplying $t2 by 4)
-    add $t7, $t6, $t7       # calculate value of $t4 for end of the horizontal line.
-    
-inner_top:
-    add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
-    add $t8, $s7, $t9           # store the total offset of the starting pixel for storing wall ($s7 + offset)
-    add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
-    li $a1, 0x00ff00            # $a1 = green
-    sw $a1, 0($t9)              # paint the current unit on the first row green
-    sw $a1, 0($t8)
-    addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
-    beq $t6, $t7, inner_end     # break out of the line-drawing loop
-    j inner_top                 # jump to the start of the inner loop
-    
-inner_end:
-    addi $t4, $t4, 128          # move vertical offset down by one line
-    beq $t4, $t5, outer_end     # on last line, break out of the outer loop
-    j outer_top                 # jump to the top of the outer loop
-    
-outer_end:
-    jr $ra                      # return to calling program
+    outer_top:
+        sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
+        sll $t7, $t2, 2         # convert length of line from pixels to bytes (by multiplying $t2 by 4)
+        add $t7, $t6, $t7       # calculate value of $t4 for end of the horizontal line.
+        
+    inner_top:
+        add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
+        add $t8, $s7, $t9           # store the total offset of the starting pixel for storing wall ($s7 + offset)
+        add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
+        li $a1, 0x00ff00            # $a1 = green
+        sw $a1, 0($t9)              # paint the current unit on the first row green
+        sw $a1, 0($t8)
+        addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
+        beq $t6, $t7, inner_end     # break out of the line-drawing loop
+        j inner_top                 # jump to the start of the inner loop
+        
+    inner_end:
+        addi $t4, $t4, 128          # move vertical offset down by one line
+        beq $t4, $t5, outer_end     # on last line, break out of the outer loop
+        j outer_top                 # jump to the top of the outer loop
+        
+    outer_end:
+        jr $ra                      # return to calling program
 
 # draw background grid,$a0 is x coordinate, $a1 is y coordinate, $a2 is width of the grid, $a3 is height of the grid
 draw_grid:
     li $a1, 0x17161A            # $a1 = dark grey
 
-    sll $t4, $t1, 7         # convert vertical offset to pixels (by multiplying $t1 by 256)
+    sll $t4, $t1, 7         # convert vertical offset to pixels (by multiplying $t1 by 128)
     sll $t5, $t3, 7         # convert height of rectangle from pixels to rows of bytes (by multiplying $t3 by 256)
     add $t5, $t4, $t5       # calculate value of $t4 for the last line in the rectangle.
     
-outer_top_grid:
-    # if previous color is dark grey, change to light grey. If previous color is light grey, change to dark grey.
-    beq $a1, 0x17161A, if_out   # check if previoud colour if dark grey 
-    li $a1, 0x17161A            # change $a1 to dark grey 
-    j end_out
+    outer_top_grid:
+        # if previous color is dark grey, change to light grey. If previous color is light grey, change to dark grey.
+        beq $a1, 0x17161A, if_out   # check if previoud colour if dark grey 
+        li $a1, 0x17161A            # change $a1 to dark grey 
+        j end_out
+        
+    if_out:
+        li $a1, 0x1b1b1b    # change $a1 to light grey 
+        
+    end_out:
+        sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
+        sll $t7, $t2, 2         # convert length of line from pixels to bytes (by multiplying $t2 by 4)
+        add $t7, $t6, $t7       # calculate value of $t6 for end of the horizontal line.
+        
+    inner_top_grid:
+        add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
+        add $t8, $s6, $t9           # calculate the location of the starting pixel for store the grid($s6 + offset)
+        add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
+        
+        # if previous color is dark grey, change to light grey. If previous color is light grey, change to dark grey.
+        beq $a1, 0x17161A, if #check if previoud colour if dark grey 
+        li $a1, 0x17161A    # change $t4 to dark grey 
+        j end
+        
+    if:
+        li $a1, 0x1b1b1b    # change $a1 to light grey 
+        
+    end:
+        sw $a1, 0($t9)              # paint the current unit on the first row yellow
+        sw $a1, 0($t8)              # store the color of the current unit in ADDR_GRID
+        
+        addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
+        beq $t6, $t7, inner_end_grid     # break out of the line-drawing loop
+        j inner_top_grid                 # jump to the start of the inner loop
+        
+    inner_end_grid:    
+        addi $t4, $t4, 128          # move vertical offset down by one line
+        beq $t4, $t5, outer_end_grid     # on last line, break out of the outer loop
+        j outer_top_grid                 # jump to the top of the outer loop
+        
+    outer_end_grid:
+        
+        jr $ra                      # return to calling program
     
-if_out:
-    li $a1, 0x1b1b1b    # change $a1 to light grey 
-    
-end_out:
-    sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
-    sll $t7, $t2, 2         # convert length of line from pixels to bytes (by multiplying $t2 by 4)
-    add $t7, $t6, $t7       # calculate value of $t6 for end of the horizontal line.
-    
-inner_top_grid:
-    add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
-    add $t8, $s6, $t9           # calculate the location of the starting pixel for store the grid($s6 + offset)
-    add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
-    
-    # if previous color is dark grey, change to light grey. If previous color is light grey, change to dark grey.
-    beq $a1, 0x17161A, if #check if previoud colour if dark grey 
-    li $a1, 0x17161A    # change $t4 to dark grey 
-    j end
-    
-if:
-    li $a1, 0x1b1b1b    # change $a1 to light grey 
-    
-end:
-    sw $a1, 0($t9)              # paint the current unit on the first row yellow
-    sw $a1, 0($t8)              # store the color of the current unit in ADDR_GRID
-    
-    addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
-    beq $t6, $t7, inner_end_grid     # break out of the line-drawing loop
-    j inner_top_grid                 # jump to the start of the inner loop
-    
-inner_end_grid:    
-    addi $t4, $t4, 128          # move vertical offset down by one line
-    beq $t4, $t5, outer_end_grid     # on last line, break out of the outer loop
-    j outer_top_grid                 # jump to the top of the outer loop
-    
-outer_end_grid:
-    
-    jr $ra                      # return to calling program
-
 # $a1 is the color value to draw on the bitmap, $a2 is the type of the tetromino, 
 draw_tetromino:
     li $a1, 0xff0000        # $a1 = red
+    
     addi $t3, $zero, 52     # the started point is fixed in the middle of the rectangle
     add $t7, $zero, $t3     # store the total offset of the starting pixel for moving the tetromino in the game loop
     add $t3, $s4, $t3       # calculate the location of the starting pixel ($s4 + offset)
@@ -216,7 +234,7 @@ draw_tetromino:
     addi $a2, $zero, 'O'    # to make the next tetromino be different with the current one.
     j end_tetromino
     
-I:
+    I:
     bne $a2, 'I', S
     sw $a1, 0($t3)
     sw $a1, 128($t3)
@@ -230,7 +248,7 @@ I:
     addi $a2, $zero, 'I'
     j end_tetromino
     
-S:
+    S:
     bne $a2, 'S', Z
     sw $a1, 0($t3)
     sw $a1, 4($t3)
@@ -245,7 +263,7 @@ S:
     addi $a2, $zero, 'S'
     j end_tetromino
     
-Z:
+    Z:
     bne $a2, 'Z', L
     sw $a1, 0($t3)
     sw $a1, 4($t3)
@@ -259,7 +277,7 @@ Z:
     addi $a2, $zero, 'Z'
     j end_tetromino
     
-L:
+    L:
     bne $a2, 'L', J
     sw $a1, 0($t3)
     sw $a1, 128($t3)
@@ -273,7 +291,7 @@ L:
     addi $a2, $zero, 'L'
     j end_tetromino
     
-J:
+    J:
     bne $a2, 'J', T
     sw $a1, 0($t3)
     sw $a1, 128($t3)
@@ -287,7 +305,7 @@ J:
     addi $a2, $zero, 'J'
     j end_tetromino
     
-T:
+    T:
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -299,7 +317,107 @@ T:
     
     addi $a2, $zero, 'T'
     
-end_tetromino:
+    end_tetromino:
+    jr $ra                      # return to calling program
+
+# $a1 is the color value to draw on the bitmap, $a2 is the type of the tetromino, $t0 is x-coordinate, $t1 is y-coordinate
+draw_next_tetromino:
+    sll $t4, $t1, 7         # convert vertical offset to pixels (by multiplying $t1 by 128)
+    sll $t3, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
+    
+    add $t3, $t3, $t4
+    add $t3, $t3, $s4
+    
+    # clear befor
+    li $a1, 0x000000        #a1 = black
+    sw $a1, -4($t3)
+    sw $a1, 0($t3)
+    sw $a1, 4($t3)
+    sw $a1, 8($t3)
+    sw $a1, 12($t3)
+    sw $a1, 124($t3)
+    sw $a1, 128($t3)
+    sw $a1, 132($t3)
+    sw $a1, 136($t3)
+    sw $a1, 140($t3)
+    sw $a1, 252($t3)
+    sw $a1, 256($t3)
+    sw $a1, 260($t3)
+    sw $a1, 264($t3)
+    sw $a1, 268($t3)
+    sw $a1, 380($t3)
+    sw $a1, 384($t3)
+    sw $a1, 388($t3)
+    sw $a1, 392($t3)
+    sw $a1, 396($t3)
+    
+    li $a1, 0xff0000        # $a1 = red
+    
+    
+    # draw shape by $a2
+    bne $a2, 'O', I_next
+    sw $a1, 0($t3)
+    sw $a1, 4($t3)
+    sw $a1, 128($t3)
+    sw $a1, 132($t3)
+    
+    j end__next_tetromino
+    
+    I_next:
+    bne $a2, 'I', S_next
+    sw $a1, 0($t3)
+    sw $a1, 128($t3)
+    sw $a1, 256($t3)
+    sw $a1, 384($t3)
+
+    j end__next_tetromino
+    
+    S_next:
+    bne $a2, 'S', Z_next
+    sw $a1, 0($t3)
+    sw $a1, 4($t3)
+    sw $a1, 128($t3)
+    sw $a1, 124($t3)
+    
+    j end__next_tetromino
+    
+    Z_next:
+    bne $a2, 'Z', L_next
+    sw $a1, 0($t3)
+    sw $a1, 4($t3)
+    sw $a1, 132($t3)
+    sw $a1, 136($t3)
+
+    j end__next_tetromino
+    
+    L_next:
+    bne $a2, 'L', J_next
+    sw $a1, 0($t3)
+    sw $a1, 128($t3)
+    sw $a1, 256($t3)
+    sw $a1, 260($t3)
+    addi $s0, $t7, 128
+    add $s1, $t7, $zero
+    addi $s2, $t7, 260
+    addi $s3, $t7, 256
+    
+    j end__next_tetromino
+    
+    J_next:
+    bne $a2, 'J', T_next
+    sw $a1, 0($t3)
+    sw $a1, 128($t3)
+    sw $a1, 256($t3)
+    sw $a1, 252($t3)
+    j end__next_tetromino
+    
+    T_next:
+    sw $a1, 0($t3)
+    sw $a1, 4($t3)
+    sw $a1, 132($t3)
+    sw $a1, 8($t3)
+    
+    end__next_tetromino:
     jr $ra                      # return to calling program
 
 # check if t1, t2, t3, t4 (new) transfering from s0, s1, s2, s3 (old) is valid tansfer
@@ -618,6 +736,40 @@ rotate_end:
 
     j end_rotate
 
+clear_borad:
+    addi $t0, $zero, 0      # set x coordinate of line
+    addi $t1, $zero, 0      # set y coordinate of line
+    addi $t2, $zero, 32      # set length of line
+    addi $t3, $zero, 32      # set height of line
+    
+    sll $t4, $t1, 7         # convert vertical offset to pixels (by multiplying $t1 by 128)
+    sll $t5, $t3, 7         # convert height of rectangle from pixels to rows of bytes (by multiplying $t3 by 128)
+    add $t5, $t4, $t5       # calculate value of $t4 for the last line in the rectangle.
+    
+    outer_top_clear:
+        sll $t6, $t0, 2         # convert horizontal offset to pixels (by multiplying $t0 by 4)
+        sll $t7, $t2, 2         # convert length of line from pixels to bytes (by multiplying $t2 by 4)
+        add $t7, $t6, $t7       # calculate value of $t4 for end of the horizontal line.
+        
+    inner_top_clear:
+        add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
+        add $t8, $s7, $t9           # store the total offset of the starting pixel for storing wall ($s7 + offset)
+        add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
+        li $a1, 0x000000            # $a1 = black
+        sw $a1, 0($t9)              # paint the current unit on the first row green
+        sw $a1, 0($t8)
+        addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
+        beq $t6, $t7, inner_end_clear     # break out of the line-drawing loop
+        j inner_top_clear                 # jump to the start of the inner loop
+        
+    inner_end_clear:
+        addi $t4, $t4, 128          # move vertical offset down by one line
+        beq $t4, $t5, outer_end_clear     # on last line, break out of the outer loop
+        j outer_top_clear                 # jump to the top of the outer loop
+        
+    outer_end_clear:
+        jr $ra                      # return to calling program
+
     
 SKIP_FUNCTION:  
 
@@ -870,6 +1022,10 @@ land:
     li $a0, 0
     li $a1, 7
     syscall
+    
+    lw $a2, ADDR_NEXT
+    sw $a2, ADDR_CURRENT
+    
     beq $a0, 0, random_0
     beq $a0, 1, random_1
     beq $a0, 2, random_2
@@ -881,24 +1037,31 @@ land:
     
     random_0:
     addi $a2, $zero, 'O'
+    sw $a2, ADDR_NEXT
     j random_end
     random_1:
     addi $a2, $zero, 'I'
+    sw $a2, ADDR_NEXT
     j random_end
     random_2:
     addi $a2, $zero, 'S'
+    sw $a2, ADDR_NEXT
     j random_end
     random_3:
     addi $a2, $zero, 'Z'
+    sw $a2, ADDR_NEXT
     j random_end
     random_4:
     addi $a2, $zero, 'L'
+    sw $a2, ADDR_NEXT
     j random_end
     random_5:
     addi $a2, $zero, 'J'
+    sw $a2, ADDR_NEXT
     j random_end
     random_6:
     addi $a2, $zero, 'T'
+    sw $a2, ADDR_NEXT
     j random_end
     
     random_end:
@@ -928,11 +1091,22 @@ land:
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     
-    j draw_tetromino
+    # Draw next tetromino on the side
+    addi $t0, $zero, 25      # set x coordinate of line
+    addi $t1, $zero, 10      # set y coordinate of line
+    lw $a2, ADDR_NEXT
+    jal draw_next_tetromino
+    
+    
+    lw $a2, ADDR_CURRENT
+    jal draw_tetromino
+    
+    j game_loop
     
 check_line:
     srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
     sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
     lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
     addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
     sw $t4, 0($t2)                  # store the new amount of landed pixels
@@ -940,7 +1114,7 @@ check_line:
     jr $ra
     
 remove_line:
-    beq $t2, 0x1000b000, end_remove_line    # if $t2 is the first value in the bitmap, return
+    beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
     # subi $t2, $t2, 52                       # set $t2 = the last pixel in the rectangle in the last line
     addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
     # addi $sp, $sp, -4
@@ -948,6 +1122,7 @@ remove_line:
     j remove_each_pixel
     # lw $ra, 0($sp)
     # addi $sp, $sp, 4
+    
     jr $ra
     
 remove_each_pixel:
@@ -969,3 +1144,249 @@ remove_each_pixel:
     
 end_remove_line:
     jr $ra
+
+game_over:
+    jal clear_borad
+    # jal draw_game_over
+    
+       addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 4      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 15      # set y coordinate of line
+    addi $t2, $zero, 4      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 9      # set x coordinate of line
+    addi $t1, $zero, 13      # set y coordinate of line
+    addi $t2, $zero, 2      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 10      # set x coordinate of line
+    addi $t1, $zero, 13      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 2      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    ########### A ##############
+    addi $t0, $zero, 12      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 14      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+
+    addi $t0, $zero, 12      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 2      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 12      # set x coordinate of line
+    addi $t1, $zero, 13      # set y coordinate of line
+    addi $t2, $zero, 2      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    ########### M ##############
+    addi $t0, $zero, 16      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 18      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 20      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 16      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 5      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    ########### E ##############
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 11      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 13      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 15      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    ########### O ##############
+    addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 4      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 10      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 7      # set x coordinate of line
+    addi $t1, $zero, 21      # set y coordinate of line
+    addi $t2, $zero, 4      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+
+    ########### V ##############
+    addi $t0, $zero, 12      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 2      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 13      # set x coordinate of line
+    addi $t1, $zero, 19      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 2      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 14      # set x coordinate of line
+    addi $t1, $zero, 21      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 16      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 2      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 15      # set x coordinate of line
+    addi $t1, $zero, 19      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 2      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function      
+    
+    ########### E ##############
+    addi $t0, $zero, 18      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 18      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 18      # set x coordinate of line
+    addi $t1, $zero, 19      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 18      # set x coordinate of line
+    addi $t1, $zero, 21      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    ########### R ##############
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 5      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function    
+    
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 22      # set x coordinate of line
+    addi $t1, $zero, 19      # set y coordinate of line
+    addi $t2, $zero, 3      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 24      # set x coordinate of line
+    addi $t1, $zero, 17      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 3      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 23      # set x coordinate of line
+    addi $t1, $zero, 20      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+    
+    addi $t0, $zero, 24      # set x coordinate of line
+    addi $t1, $zero, 21      # set y coordinate of line
+    addi $t2, $zero, 1      # set length of line
+    addi $t3, $zero, 1      # set height of line
+    jal draw_rectangle        # call the rectangle-drawing function
+
+    
+    restart:
+    addi $t1, $zero, 4096
+    addi $t0, $zero, 0
+    addi $t5, $zero, 0x0
+    
+    initialize_landed_loop:
+    beq $t0, $t1, initialize_landed_end
+    add $t3, $t0, $a3   
+    sw $t5, 0($t3)
+    addi $t0, $t0, 4
+    j initialize_landed_loop
+    
+    initialize_landed_end:
+    
+    lw $a0, 4($s5) 
+    beq $a0, 0x72, main
+    b restart
