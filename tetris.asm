@@ -145,7 +145,7 @@ draw_rectangle:
         add $t9, $t6, $t4           # store the total offset of the starting pixel (relative to $s4)
         add $t8, $s7, $t9           # store the total offset of the starting pixel for storing wall ($s7 + offset)
         add $t9, $s4, $t9           # calculate the location of the starting pixel ($s4 + offset)
-        li $a1, 0x00ff00            # $a1 = green
+        li $a1, 0xE3C256            # $a1 = Old Glod
         sw $a1, 0($t9)              # paint the current unit on the first row green
         sw $a1, 0($t8)
         addi $t6, $t6, 4            # move horizontal offset to the right by one pixel
@@ -214,14 +214,14 @@ draw_grid:
     
 # $a1 is the color value to draw on the bitmap, $a2 is the type of the tetromino, 
 draw_tetromino:
-    li $a1, 0xff0000        # $a1 = red
-    
+    # li $a1, 0xff0000        # $a1 = red
     addi $t3, $zero, 52     # the started point is fixed in the middle of the rectangle
     add $t7, $zero, $t3     # store the total offset of the starting pixel for moving the tetromino in the game loop
     add $t3, $s4, $t3       # calculate the location of the starting pixel ($s4 + offset)
     
     # draw shape by $a2
     bne $a2, 'O', I
+    li $a1, 0x586994        # $a1 = Waikawa Grey
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 128($t3)
@@ -236,6 +236,7 @@ draw_tetromino:
     
     I:
     bne $a2, 'I', S
+    li $a1, 0x7ea172        # $a1 = Greeny Grey
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -250,6 +251,7 @@ draw_tetromino:
     
     S:
     bne $a2, 'S', Z
+    li $a1, 0xc7cb85        # $a1 = Pale Olive
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 128($t3)
@@ -265,6 +267,7 @@ draw_tetromino:
     
     Z:
     bne $a2, 'Z', L
+    li $a1, 0xe7a977        # $a1 = Brown Sugar
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -279,6 +282,7 @@ draw_tetromino:
     
     L:
     bne $a2, 'L', J
+    li $a1, 0x644536        # $a1 = Purple Brown
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -293,6 +297,7 @@ draw_tetromino:
     
     J:
     bne $a2, 'J', T
+    li $a1, 0xcc2936        # $a1 = Persian Red
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -306,6 +311,7 @@ draw_tetromino:
     j end_tetromino
     
     T:
+    li $a1, 0xeae8ff        # $a1 = Blue Chalk
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -328,8 +334,10 @@ draw_next_tetromino:
     add $t3, $t3, $t4
     add $t3, $t3, $s4
     
+    addi $sp, $sp, -4
+    sw $a1, 0($sp)          # store the color of the previous tetrominoes
     # clear befor
-    li $a1, 0x000000        #a1 = black
+    li $a1, 0x0        #a1 = black
     sw $a1, -4($t3)
     sw $a1, 0($t3)
     sw $a1, 4($t3)
@@ -350,12 +358,14 @@ draw_next_tetromino:
     sw $a1, 388($t3)
     sw $a1, 392($t3)
     sw $a1, 396($t3)
+    sw $a1, 512($t3)
     
-    li $a1, 0xff0000        # $a1 = red
+    # li $a1, 0xff0000        # $a1 = red
     
     
     # draw shape by $a2
     bne $a2, 'O', I_next
+    li $a1, 0x586994        # $a1 = Waikawa Grey
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 128($t3)
@@ -365,6 +375,7 @@ draw_next_tetromino:
     
     I_next:
     bne $a2, 'I', S_next
+    li $a1, 0x7ea172        # $a1 = Greeny Grey
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -374,6 +385,7 @@ draw_next_tetromino:
     
     S_next:
     bne $a2, 'S', Z_next
+    li $a1, 0xc7cb85        # $a1 = Pale Olive
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 128($t3)
@@ -383,6 +395,7 @@ draw_next_tetromino:
     
     Z_next:
     bne $a2, 'Z', L_next
+    li $a1, 0xe7a977        # $a1 = Brown Sugar
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -392,6 +405,7 @@ draw_next_tetromino:
     
     L_next:
     bne $a2, 'L', J_next
+    li $a1, 0x644536        # $a1 = Purple Brown
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -405,6 +419,7 @@ draw_next_tetromino:
     
     J_next:
     bne $a2, 'J', T_next
+    li $a1, 0xcc2936        # $a1 = Persian Red
     sw $a1, 0($t3)
     sw $a1, 128($t3)
     sw $a1, 256($t3)
@@ -412,12 +427,15 @@ draw_next_tetromino:
     j end__next_tetromino
     
     T_next:
+    li $a1, 0xeae8ff        # $a1 = Blue Chalk
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
     sw $a1, 8($t3)
     
     end__next_tetromino:
+    lw $a1, 0($sp)
+    addi $sp, $sp, 4
     jr $ra                      # return to calling program
 
 # check if t1, t2, t3, t4 (new) transfering from s0, s1, s2, s3 (old) is valid tansfer
@@ -1016,10 +1034,12 @@ respond_to_D:                       # let the tertromino move right for 1 pixel
    
 	
 land:
-    #generate random tetromino type
+    # generate random tetromino type
     # generate random number use syscall
     li $v0, 42
     li $a0, 0
+    addi $sp, $sp, -4
+    sw $a1, 0($sp)
     li $a1, 7
     syscall
     
@@ -1069,7 +1089,9 @@ land:
     # change back
     li $v0, 32
     li $a0, 1
-    li $a1, 0xff0000
+    
+    lw $a1, 0($sp)
+    addi $sp, $sp, 4
     
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -1078,15 +1100,12 @@ land:
     jal check_line
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    lw $ra, 0($sp)
     jal check_line
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    lw $ra, 0($sp)
     jal check_line
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    lw $ra, 0($sp)
     jal check_line
     lw $ra, 0($sp)
     addi $sp, $sp, 4
@@ -1114,33 +1133,36 @@ check_line:
     jr $ra
     
 remove_line:
-    beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
+    # beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
     # subi $t2, $t2, 52                       # set $t2 = the last pixel in the rectangle in the last line
-    addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
+    # addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
     # addi $sp, $sp, -4
     # sw $ra, 0($sp)
+    subi $t2, $t2, 4
     j remove_each_pixel
     # lw $ra, 0($sp)
     # addi $sp, $sp, 4
-    
-    jr $ra
+    # jr $ra
     
 remove_each_pixel:
     addi $t4, $t2, 128              # the position in the next line
     lw $t5, 0($t2)                  # find the value in this postion
+    # li $t5, 0x0D21A1
     sw $t5, 0($t4)                  # load the value from the last line in ADDR_TETR
+    
     sub $t2, $t2, $a3               # find the offset for calculate the postion in ADDR_DSPL
     add $t2, $t2, $s4
     addi $t4, $t2, 128
     lw $t5, 0($t2)
+    # li $t5, 0x0D21A1
     sw $t5, 0($t4)
     sub $t2, $t2, $s4
     add $t2, $t2, $a3
-    addi $t3, $t3, 1
+    # addi $t3, $t3, 1
     sub $t2, $t2, 4
     beq $t2, 0x1000b000, end_remove_line
-    bne $t3, 20, remove_each_pixel
-    j remove_line
+    # bne $t3, 20, remove_each_pixel
+    j remove_each_pixel
     
 end_remove_line:
     jr $ra
@@ -1149,7 +1171,7 @@ game_over:
     jal clear_borad
     # jal draw_game_over
     
-       addi $t0, $zero, 7      # set x coordinate of line
+    addi $t0, $zero, 7      # set x coordinate of line
     addi $t1, $zero, 11      # set y coordinate of line
     addi $t2, $zero, 1      # set length of line
     addi $t3, $zero, 5      # set height of line
