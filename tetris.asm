@@ -311,7 +311,7 @@ draw_tetromino:
     j end_tetromino
     
     T:
-    li $a1, 0xeae8ff        # $a1 = Blue Chalk
+    li $a1, 0xE37F1B        # $a1 = Blue Chalk
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -427,7 +427,7 @@ draw_next_tetromino:
     j end__next_tetromino
     
     T_next:
-    li $a1, 0xeae8ff        # $a1 = Blue Chalk
+    li $a1, 0xE37F1B        # $a1 = Fulvous
     sw $a1, 0($t3)
     sw $a1, 4($t3)
     sw $a1, 132($t3)
@@ -1129,20 +1129,36 @@ check_line:
     lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
     addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
     sw $t4, 0($t2)                  # store the new amount of landed pixels
-    beq $t4, 14, remove_line        # if there are 14 pixels in this line, remove
+    beq $t4, 14, play_removal_animation        # if there are 14 pixels in this line, play removal animation
     jr $ra
     
-remove_line:
+play_removal_animation:
     # beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
     # subi $t2, $t2, 52                       # set $t2 = the last pixel in the rectangle in the last line
     # addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
-    # addi $sp, $sp, -4
-    # sw $ra, 0($sp)
+    addi $t3, $t2, 24
+    addi $t5, $zero, 0
+    sub $t3, $t3, $a3
+    add $t3, $t3, $s4
+    
+    add $sp, $sp, 4
+    sw $a1, 0($sp)
+    li $a1, 0xEEF0F2
+    light_pixel:
+        sw $a1 0($t3)
+        addi $t3, $t3, 4
+        addi $t5, $t5, 1
+        li $v0, 32                     # service number = sleep
+	    li $a0, 20                      # $a0 = the length of time to sleep in milliseconds
+	    syscall
+    bne $t5, 14, light_pixel
     subi $t2, $t2, 4
+    lw $a1, 0($sp)
+    add $sp, $sp, -4
+    li $v0, 32                     # service number = sleep
+	li $a0, 40                      # $a0 = the length of time to sleep in milliseconds
+	syscall
     j remove_each_pixel
-    # lw $ra, 0($sp)
-    # addi $sp, $sp, 4
-    # jr $ra
     
 remove_each_pixel:
     addi $t4, $t2, 128              # the position in the next line
