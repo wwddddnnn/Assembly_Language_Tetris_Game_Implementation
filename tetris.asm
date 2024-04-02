@@ -1095,18 +1095,40 @@ land:
     
     addi $sp, $sp, -4
     sw $ra, 0($sp)
+    
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    jal check_line
+    addi $sp, $sp, -4
+    sw $t1, 0($sp)
+    
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    jal check_line
+    addi $sp, $sp, -4
+    sw $t1, 0($sp)
+    
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    jal check_line
+    addi $sp, $sp, -4
+    sw $t1, 0($sp)
+    
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    addi $sp, $sp, -4
+    sw $t1, 0($sp)
+    
+    lw $t1, 0($sp)
+    addi $sp, $sp, 4
     jal check_line
+    lw $t1, 0($sp)
+    addi $sp, $sp, 4
+    jal check_line
+    lw $t1, 0($sp)
+    addi $sp, $sp, 4
+    jal check_line
+    lw $t1, 0($sp)
+    addi $sp, $sp, 4
+    jal check_line
+    
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     
@@ -1151,7 +1173,7 @@ play_removal_animation:
         li $v0, 32                     # service number = sleep
 	    li $a0, 20                      # $a0 = the length of time to sleep in milliseconds
 	    syscall
-    bne $t5, 14, light_pixel
+        bne $t5, 14, light_pixel
     subi $t2, $t2, 4
     lw $a1, 0($sp)
     add $sp, $sp, -4
@@ -1181,6 +1203,32 @@ remove_each_pixel:
     j remove_each_pixel
     
 end_remove_line:
+    # draw the grid
+    li $t3, 0                               # start line
+    draw_grid_line:
+        li $t2, 24                              # start offset
+        draw_grid_pixel:
+            add $t4, $t2, $t3
+            
+            add $t4, $t4, $a3   
+            lw $t5, 0($t4)                  # load the value in ADDR_TETR
+            sub $t4, $t4, $a3
+            
+            bne $t5, 0x0, skip_draw_grid    # check if the tetrominos on this pixel
+            
+            add $t4, $t4, $s6
+            lw $t5, 0($t4)                  # load the value in ADDR_GRID
+            sub $t4, $t4, $s6
+            
+            add $t4, $t4, $s4
+            sw $t5, 0($t4)                  # draw the color in ADDR_DSPL
+            sub $t4, $t4, $s4
+            
+            skip_draw_grid:
+            addi $t2, $t2, 4
+            bne $t2, 0x50, draw_grid_pixel
+        add $t3, $t3, 128
+        bne $t3, 3840, draw_grid_line
     jr $ra
 
 game_over:
