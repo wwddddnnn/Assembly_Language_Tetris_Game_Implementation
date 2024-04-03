@@ -603,21 +603,12 @@ Delete_current_tetrominos:
     
 
 rotate_O:
-    jal Delete_current_tetrominos
     j rotate_end
     
 rotate_I:
     addi $t1, $s1, 128
     beq $t1, $s0, rotate_I_horizontal # check if I is vertical
     # if I is horizatonl -> rotate vertical
-    addi $t4, $s1, 128
-    addi $t2, $s1, 256
-    addi $t3, $s1, 384
-    addi $t1, $s1, 0
-    jal Check_valid_position_left_right
-    
-    jal Delete_current_tetrominos
-    
     addi $s0, $s1, 128
     addi $s2, $s1, 256
     addi $s3, $s1, 384
@@ -639,14 +630,6 @@ rotate_I:
     bne $t5, $zero, rotate_I_one_left
     bne $t6, $zero, rotate_I_one_left
     
-    addi $t4, $s1, 4
-    addi $t2, $s1, 8
-    addi $t3, $s1, 12
-    addi $t1, $s1, 0
-    
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s0, $s1, 4
     addi $s2, $s1, 8
     addi $s3, $s1, 12
@@ -659,8 +642,6 @@ rotate_I:
     addi $t3, $t1, 12
     
     jal Check_valid_position_left_right
-    
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -677,8 +658,6 @@ rotate_I:
     addi $t3, $t1, 12
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -694,8 +673,6 @@ rotate_I:
     addi $t3, $t1, 12
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -716,15 +693,6 @@ rotate_S:
     jal Check_color
     bne $t5, $zero, rotate_S_one_left
     bne $t6, $zero, rotate_S_one_left
-        
-        
-    subi $t1, $s0, 124
-    subi $t2, $s0, 120
-    addi $t3, $s0, 4
-    addi $t4, $s0, 0
-    jal Check_valid_position_left_right
-    
-    jal Delete_current_tetrominos
     
     
     subi $s1, $s0, 124
@@ -740,8 +708,6 @@ rotate_S:
     
     jal Check_valid_position_left_right
     
-    jal Delete_current_tetrominos
-    
     addi $s0, $t4, 0
     addi $s1, $t1, 0
     addi $s2, $t2, 0
@@ -751,14 +717,6 @@ rotate_S:
     
     # if horizatonl -> rotate vertical
     rotate_S_vertical:
-    subi $t1, $s0, 128
-    addi $t2, $s0, 4
-    addi $t3, $s0, 132
-    addi $t4, $s0, 0
-    jal Check_valid_position_left_right
-    
-    jal Delete_current_tetrominos
-    
     subi $s1, $s0, 128
     addi $s2, $s0, 4
     addi $s3, $s0, 132
@@ -778,14 +736,6 @@ rotate_Z:
     bne $t5, $zero, rotate_Z_one_left
     bne $t6, $zero, rotate_Z_one_left
     
-    addi $t1, $s0, 4
-    addi $t2, $s0, 132
-    addi $t3, $s0, 136
-    addi $t4, $s0, 0
-    jal Check_valid_position_left_right
-
-    jal Delete_current_tetrominos
-    
     addi $s1, $s0, 4
     addi $s2, $s0, 132
     addi $s3, $s0, 136
@@ -798,8 +748,6 @@ rotate_Z:
     addi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -815,8 +763,6 @@ rotate_Z:
     addi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -832,13 +778,6 @@ rotate_Z:
     bne $t5, $zero, rotate_Z_one_right
     bne $t6, $zero, rotate_Z_one_right
     
-    addi $t1, $s0, 128
-    addi $t2, $s0, 124
-    addi $t3, $s0, 252
-    addi $t4, $s0, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s1, $s0, 128
     addi $s2, $s0, 124
     addi $s3, $s0, 252
@@ -851,8 +790,6 @@ rotate_Z:
     addi $t3, $t4, 252
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -874,13 +811,6 @@ rotate_L:
     bne $t5, $zero, rotate_L_type_4_left
     bne $t6, $zero, rotate_L_type_4_left
     
-    addi $t2, $s3, 4
-    subi $t4, $s3, 128
-    subi $t1, $s3, 256
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s2, $s3, 4
     subi $s0, $s3, 128
     subi $s1, $s3, 256
@@ -893,8 +823,6 @@ rotate_L:
     subi $t1, $t3, 256
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -909,13 +837,6 @@ rotate_L:
     bne $t5, $zero, rotate_L_type_1_left
     bne $t6, $zero, rotate_L_type_1_left
     
-    addi $t4, $s3, 4
-    addi $t1, $s3, 8
-    addi $t2, $s3, 128
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s0, $s3, 4
     addi $s1, $s3, 8
     addi $s2, $s3, 128
@@ -928,8 +849,6 @@ rotate_L:
     addi $t4, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -943,13 +862,6 @@ rotate_L:
     jal Check_color
     bne $t5, $zero, rotate_L_type_2_right
     bne $t6, $zero, rotate_L_type_2_right
- 
-    addi $t4, $s3, 128
-    addi $t1, $s3, 256
-    subi $t2, $s3, 4
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     addi $s0, $s3, 128
     addi $s1, $s3, 256
@@ -963,8 +875,6 @@ rotate_L:
     addi $t4, $t3, 128
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -978,13 +888,6 @@ rotate_L:
     jal Check_color
     bne $t5, $zero, rotate_L_type_3_right
     bne $t6, $zero, rotate_L_type_3_right
-
-    subi $t4, $s3, 4
-    subi $t1, $s3, 8
-    subi $t2, $s3, 128
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     subi $s0, $s3, 4
     subi $s1, $s3, 8
@@ -998,8 +901,6 @@ rotate_L:
     subi $t4, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1014,13 +915,6 @@ rotate_J:
     beq $t1, $s2, rotate_J_type_4 # check if L is type 2
     addi $t1, $s3, 4
     beq $t1, $s0, rotate_J_type_3 # check if L is type 3
-    
-    addi $t4, $s3, 4
-    addi $t2, $s3, 128
-    addi $t1, $s3, 256
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     # J is type 2
     addi $s0, $s3, 4
@@ -1038,13 +932,6 @@ rotate_J:
     jal Check_color
     bne $t5, $zero, rotate_J_type_1_one_left
     bne $t6, $zero, rotate_J_type_1_one_left
-        
-    subi $t4, $s3, 128
-    addi $t1, $s3, 8
-    addi $t2, $s3, 4
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     subi $s0, $s3, 128
     addi $s1, $s3, 8
@@ -1058,8 +945,6 @@ rotate_J:
     addi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1075,8 +960,6 @@ rotate_J:
     addi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1097,12 +980,6 @@ rotate_J:
     bne $t5, $zero, rotate_J_type_3_one_right
     bne $t6, $zero, rotate_J_type_3_one_right
     
-    addi $t4, $s3, 128
-    subi $t1, $s3, 8
-    subi $t2, $s3, 4
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     addi $s0, $s3, 128
     subi $s1, $s3, 8
@@ -1116,8 +993,6 @@ rotate_J:
     subi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1134,8 +1009,6 @@ rotate_J:
     subi $t2, $t3, 4
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1146,13 +1019,6 @@ rotate_J:
     
     
     rotate_J_type_4:
-    subi $t4, $s3, 4
-    subi $t1, $s3, 256
-    subi $t2, $s3, 128   
-    addi $t3, $s3, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     subi $s0, $s3, 4
     subi $s1, $s3, 256
     subi $s2, $s3, 128
@@ -1170,13 +1036,6 @@ rotate_T:
     bne $t5, $zero, rotate_T_type_2_left
     bne $t6, $zero, rotate_T_type_2_left
     
-    addi $t4, $s1, 4
-    subi $t2, $s1, 4
-    subi $t3, $s1, 128    
-    addi $t1, $s1, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s0, $s1, 4
     subi $s2, $s1, 4
     subi $s3, $s1, 128
@@ -1190,8 +1049,6 @@ rotate_T:
     subi $t3, $t1, 128
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1201,27 +1058,12 @@ rotate_T:
     j rotate_end
 
     rotate_T_type_1:
-    addi $t2, $s1, 128
-    subi $t3, $s1, 4
-    subi $t4, $s1, 128
-    addi $t1, $s1, 0
-    jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
-    
     addi $s2, $s1, 128
     subi $s3, $s1, 4
     subi $s0, $s1, 128
     j rotate_end
     
     rotate_T_type_3:
-    addi $t3, $s1, 4
-    subi $t2, $s1, 128
-    addi $t4, $s1, 128
-    addi $t1, $s1, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
-    
     addi $s3, $s1, 4
     subi $s2, $s1, 128
     addi $s0, $s1, 128
@@ -1232,13 +1074,6 @@ rotate_T:
     jal Check_color
     bne $t5, $zero, rotate_T_type_4_right
     bne $t6, $zero, rotate_T_type_4_right
-     
-    addi $t2, $s1, 4
-    addi $t3, $s1, 128
-    subi $t4, $s1, 4    
-    addi $t1, $s1, 0
-    jal Check_valid_position_left_right
-    jal Delete_current_tetrominos
     
     addi $s2, $s1, 4
     addi $s3, $s1, 128
@@ -1253,8 +1088,6 @@ rotate_T:
     addi $t3, $t1, 128
     
     jal Check_valid_position_left_right
-        
-    jal Delete_current_tetrominos
     
     addi $s0, $t4, 0
     addi $s1, $t1, 0
@@ -1359,7 +1192,7 @@ respond_to_Q:
 	syscall
 	
 respond_to_W:
-    # jal Delete_current_tetrominos
+    jal Delete_current_tetrominos
     
     beq $a2, 'O', rotate_O
 	beq $a2, 'I', rotate_I
