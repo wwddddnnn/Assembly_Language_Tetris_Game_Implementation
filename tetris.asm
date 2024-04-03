@@ -78,8 +78,11 @@ ADDR_NEXT:
 	
 main:
 
+addi $a2, $zero, 'T'
+sw $a2, ADDR_NEXT    # $a2 = address of current tetrominos
 addi $a2, $zero, 'O'
 sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
+
 
 main_loop:
 sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
@@ -129,7 +132,7 @@ addi $t0, $zero, 25      # set x coordinate of line
 addi $t1, $zero, 10      # set y coordinate of line
 lw $a2, ADDR_NEXT
 jal draw_next_tetromino
-
+lw $a2, ADDR_CURRENT
 
 j SKIP_FUNCTION
 
@@ -770,9 +773,29 @@ rotate_Z:
     
     # if horizatonl -> rotate vertical
     rotate_Z_vertical:
+    subi $t1, $s0, 4
+    jal Check_color
+    bne $t5, $zero, rotate_Z_one_right
+    bne $t6, $zero, rotate_Z_one_right
+    
     addi $s1, $s0, 128
     addi $s2, $s0, 124
     addi $s3, $s0, 252
+    j rotate_end
+    
+    rotate_Z_one_right:
+    addi $t4, $s0, 4
+    addi $t1, $t4, 128
+    addi $t2, $t4, 124
+    addi $t3, $t4, 252
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
     j rotate_end
     
 rotate_L:
@@ -1500,7 +1523,7 @@ play_removal_animation:
     sub $t3, $t3, $a3
     add $t3, $t3, $s4
     
-    add $sp, $sp, 4
+    add $sp, $sp, -4
     sw $a1, 0($sp)
     li $a1, 0xEEF0F2
     light_pixel:
@@ -1513,7 +1536,7 @@ play_removal_animation:
         bne $t5, 14, light_pixel
     subi $t2, $t2, 4
     lw $a1, 0($sp)
-    add $sp, $sp, -4
+    add $sp, $sp, 4
     li $v0, 32                     # service number = sleep
 	li $a0, 40                      # $a0 = the length of time to sleep in milliseconds
 	syscall
