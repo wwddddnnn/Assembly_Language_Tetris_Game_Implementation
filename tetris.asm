@@ -1690,7 +1690,7 @@ play_removal_animation:
     sub $t3, $t3, $a3
     add $t3, $t3, $s4
     
-    add $sp, $sp, 4
+    add $sp, $sp, -4
     sw $a1, 0($sp)
     li $a1, 0xEEF0F2
     light_pixel:
@@ -1703,7 +1703,7 @@ play_removal_animation:
         bne $t5, 14, light_pixel
     subi $t2, $t2, 4
     lw $a1, 0($sp)
-    add $sp, $sp, -4
+    add $sp, $sp, 4
     li $v0, 32                     # service number = sleep
 	li $a0, 40                      # $a0 = the length of time to sleep in milliseconds
 	syscall
