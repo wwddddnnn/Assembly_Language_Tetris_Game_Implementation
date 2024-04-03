@@ -224,6 +224,7 @@ draw_tetromino:
     addi $t3, $zero, 52     # the started point is fixed in the middle of the rectangle
     add $t7, $zero, $t3     # store the total offset of the starting pixel for moving the tetromino in the game loop
     add $t3, $s4, $t3       # calculate the location of the starting pixel ($s4 + offset)
+    # li $a2, 'I'             # testing
     
     # draw shape by $a2
     bne $a2, 'O', I
@@ -334,31 +335,22 @@ draw_next_tetromino:
     addi $sp, $sp, -4
     sw $a1, 0($sp)          # store the color of the previous tetrominoes
     # clear befor
-    li $a1, 0x0        #a1 = black
-    sw $a1, -4($t3)
+    li $a1, 0x0             #a1 = black
+    
+    addi $sp, $sp, -4
+    sw $t3, 0($sp)
+    delet_previous_tetrominoes:
+        sw $a1, -4($t3)
+        sw $a1, 0($t3)
+        sw $a1, 4($t3)
+        sw $a1, 8($t3)
+        sw $a1, 12($t3)
+        addi $t3, $t3, 128
+        bne $t3, 0x10008964, delet_previous_tetrominoes
     sw $a1, 0($t3)
-    sw $a1, 4($t3)
-    sw $a1, 8($t3)
-    sw $a1, 12($t3)
-    sw $a1, 124($t3)
-    sw $a1, 128($t3)
-    sw $a1, 132($t3)
-    sw $a1, 136($t3)
-    sw $a1, 140($t3)
-    sw $a1, 252($t3)
-    sw $a1, 256($t3)
-    sw $a1, 260($t3)
-    sw $a1, 264($t3)
-    sw $a1, 268($t3)
-    sw $a1, 380($t3)
-    sw $a1, 384($t3)
-    sw $a1, 388($t3)
-    sw $a1, 392($t3)
-    sw $a1, 396($t3)
-    sw $a1, 512($t3)
-    
-    # li $a1, 0xff0000        # $a1 = red
-    
+    lw $t3, 0($sp)
+    addi $sp, $sp, 4
+    # li $a2, 'I'             # testing
     
     # draw shape by $a2
     bne $a2, 'O', I_next
@@ -1453,42 +1445,41 @@ land:
     lw $a1, 0($sp)
     addi $sp, $sp, 4
     
-    addi $sp, $sp, -4
-    sw $ra, 0($sp)
-    
     add $t1, $a3, $s0               # calculate the new location of the leftest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    addi $sp, $sp, -4
-    sw $t1, 0($sp)
-    
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # store the new amount of landed pixels
+
     add $t1, $a3, $s1               # calculate the new location of the topmost pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    addi $sp, $sp, -4
-    sw $t1, 0($sp)
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # store the new amount of landed pixels
     
     add $t1, $a3, $s2               # calculate the new location of the rightest pixel in stored landed tetrominos
     sw $a1, 0($t1)
-    addi $sp, $sp, -4
-    sw $t1, 0($sp)
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # store the new amount of landed pixels
     
     add $t1, $a3, $s3               # calculate the new location of the bottom pixel in stored landed tetrominos
     sw $a1, 0($t1)
+    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
+    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
+    sw $t4, 0($t2)                  # store the new amount of landed pixels
+    
     addi $sp, $sp, -4
-    sw $t1, 0($sp)
-    
-    lw $t1, 0($sp)
-    addi $sp, $sp, 4
-    jal check_line
-    lw $t1, 0($sp)
-    addi $sp, $sp, 4
-    jal check_line
-    lw $t1, 0($sp)
-    addi $sp, $sp, 4
-    jal check_line
-    lw $t1, 0($sp)
-    addi $sp, $sp, 4
-    jal check_line
-    
+    sw $ra, 0($sp)
+    jal check_line  
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     
@@ -1505,19 +1496,36 @@ land:
     j game_loop
     
 check_line:
-    srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
-    sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
-    beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
-    lw $t4, 0($t2)                  # $t4 = the total amount of landed pixels
-    addi $t4, $t4, 1                # add the 1 new pixel into the total amount of the landed pixels in this line
-    sw $t4, 0($t2)                  # store the new amount of landed pixels
-    beq $t4, 14, play_removal_animation        # if there are 14 pixels in this line, play removal animation
+    # srl $t2, $t1, 7                 # to figure out which line that the tetromino is in
+    # sll $t2, $t2, 7                 # $t2 = the first value of this line, which we store the total amount of landed pixels
+    li $t2, 0x1000b000                      # start line
+    lw $t4, 0($t2)
+    bne $t4, 0x0, game_over                 # if $t2 is the first value in the bitmap, return
+    beq $t4, 14, play_removal_animation     # if there are 14 pixels in this line, play removal animation
+    check_every_line:
+        bne $t4, 14, skip_remove
+        addi, $sp, $sp, -4
+        sw $ra, 0($sp)
+        jal play_removal_animation
+        lw $ra, 0($sp)
+        add $sp, $sp, 4
+        skip_remove:
+        # addi $t2, $t2, 4
+        # li $t1, 0xFF6464
+        # sw $t1, 0($t2)
+        # subi $t2, $t2, 4
+        addi $t2, $t2, 128
+        lw $t4, 0($t2)
+        bne $t2, 0x1000bf00, check_every_line
     jr $ra
     
 play_removal_animation:
     # beq $t2, 0x1000b000, game_over    # if $t2 is the first value in the bitmap, return
     # subi $t2, $t2, 52                       # set $t2 = the last pixel in the rectangle in the last line
     # addi $t3, $zero, 0                      # the count of the total adding pixel, to determine whether jump to next line
+    addi $sp, $sp, -4
+    sw $t2, 0($sp)
+    
     addi $t3, $t2, 24
     addi $t5, $zero, 0
     sub $t3, $t3, $a3
@@ -1589,6 +1597,9 @@ end_remove_line:
             bne $t2, 0x50, draw_grid_pixel
         add $t3, $t3, 128
         bne $t3, 3840, draw_grid_line
+        
+    lw $t2, 0($sp)
+    addi, $sp, $sp, 4
     jr $ra
 
 game_over:
