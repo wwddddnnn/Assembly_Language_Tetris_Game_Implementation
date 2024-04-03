@@ -78,15 +78,18 @@ ADDR_NEXT:
 	
 main:
 
+addi $a2, $zero, 'O'
+sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
+
+main_loop:
+sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
+
 # Initialize the game
 lw $s4, ADDR_DSPL       # $s4 = base address for display
 lw $s5, ADDR_KBRD       # $s5 = address of keyboard
 lw $s6, ADDR_GRID       # $s6 = address of grid
 lw $s7, ADDR_WALL       # $s7 = address of walls
 lw $a3, ADDR_TETR       # $a3 = address of landed tetrominos
-
-addi $a2, $zero, 'O'
-sw $a2, ADDR_CURRENT    # $a2 = address of current tetrominos
 
 jal clear_borad
 
@@ -231,7 +234,6 @@ draw_tetromino:
     addi $s2, $t7, 132
     addi $s3, $t7, 128
     
-    addi $a2, $zero, 'O'    # to make the next tetromino be different with the current one.
     j end_tetromino
     
     I:
@@ -245,8 +247,7 @@ draw_tetromino:
     add $s1, $t7, $zero
     addi $s2, $t7, 256
     addi $s3, $t7, 384
-    
-    addi $a2, $zero, 'I'
+
     j end_tetromino
     
     S:
@@ -261,8 +262,6 @@ draw_tetromino:
     addi $s2, $t7, 4
     addi $s3, $t7, 128
     
-    
-    addi $a2, $zero, 'S'
     j end_tetromino
     
     Z:
@@ -277,7 +276,6 @@ draw_tetromino:
     addi $s2, $t7, 136
     addi $s3, $t7, 132
     
-    addi $a2, $zero, 'Z'
     j end_tetromino
     
     L:
@@ -292,7 +290,6 @@ draw_tetromino:
     addi $s2, $t7, 260
     addi $s3, $t7, 256
     
-    addi $a2, $zero, 'L'
     j end_tetromino
     
     J:
@@ -307,7 +304,6 @@ draw_tetromino:
     addi $s2, $t7, 128
     addi $s3, $t7, 256
     
-    addi $a2, $zero, 'J'
     j end_tetromino
     
     T:
@@ -320,8 +316,6 @@ draw_tetromino:
     addi $s1, $t7, 4
     addi $s2, $t7, 8
     addi $s3, $t7, 132
-    
-    addi $a2, $zero, 'T'
     
     end_tetromino:
     jr $ra                      # return to calling program
@@ -618,19 +612,104 @@ rotate_I:
     j rotate_end
     
     rotate_I_horizontal:
+    addi $t1, $s1, 4
+    jal Check_color
+    bne $t5, $zero, rotate_I_three_left
+    bne $t6, $zero, rotate_I_three_left
+    
+    addi $t1, $s1, 8
+    jal Check_color
+    bne $t5, $zero, rotate_I_two_left
+    bne $t6, $zero, rotate_I_two_left
+    
+    addi $t1, $s1, 12
+    jal Check_color
+    bne $t5, $zero, rotate_I_one_left
+    bne $t6, $zero, rotate_I_one_left
+    
     addi $s0, $s1, 4
     addi $s2, $s1, 8
     addi $s3, $s1, 12
     j rotate_end
+    
+    rotate_I_three_left:
+    subi $t1, $s1, 12
+    addi $t4, $t1, 4
+    addi $t2, $t1, 8
+    addi $t3, $t1, 12
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+        
+    
+    rotate_I_two_left:
+    subi $t1, $s1, 8
+    addi $t4, $t1, 4
+    addi $t2, $t1, 8
+    addi $t3, $t1, 12
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+    rotate_I_one_left:
+    subi $t1, $s1, 4
+    addi $t4, $t1, 4
+    addi $t2, $t1, 8
+    addi $t3, $t1, 12
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+
 
     
 rotate_S:
     addi $t1, $s1, 4
     beq $t1, $s2, rotate_S_vertical # check if S is horizontal
+    
     # if vertical -> horizontal
+    subi $t1, $s0, 120
+    jal Check_color
+    bne $t5, $zero, rotate_S_one_left
+    bne $t6, $zero, rotate_S_one_left
+    
+    
     subi $s1, $s0, 124
     subi $s2, $s0, 120
     addi $s3, $s0, 4
+    j rotate_end
+    
+    rotate_S_one_left:
+    subi $t4, $s0, 4
+    addi $t3, $t4, 4
+    subi $t1, $t3, 128
+    addi $t2, $t1, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
     j rotate_end
     
     # if horizatonl -> rotate vertical
@@ -644,9 +723,49 @@ rotate_Z:
     addi $t1, $s0, 4
     beq $t1, $s1, rotate_Z_vertical # check if S is horizontal
     # if vertical -> horizontal
+    addi $t1, $s0, 4
+    jal Check_color
+    bne $t5, $zero, rotate_Z_two_left
+    bne $t6, $zero, rotate_Z_two_left
+    
+    addi $t1, $s0, 8
+    jal Check_color
+    bne $t5, $zero, rotate_Z_one_left
+    bne $t6, $zero, rotate_Z_one_left
+    
     addi $s1, $s0, 4
     addi $s2, $s0, 132
     addi $s3, $s0, 136
+    j rotate_end
+    
+    rotate_Z_one_left:
+    subi $t4, $s0, 4
+    addi $t1, $t4, 4
+    addi $t3, $t1, 128
+    addi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+    rotate_Z_two_left:
+    subi $t4, $s0, 8
+    addi $t1, $t4, 4
+    addi $t3, $t1, 128
+    addi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
     j rotate_end
     
     # if horizatonl -> rotate vertical
@@ -664,29 +783,108 @@ rotate_L:
     beq $t1, $s2, rotate_L_type_3 # check if L is type 3
     
     # L is type 4
+    addi $t1, $s2, 4
+    jal Check_color
+    bne $t5, $zero, rotate_L_type_4_left
+    bne $t6, $zero, rotate_L_type_4_left
+    
     addi $s2, $s3, 4
     subi $s0, $s3, 128
     subi $s1, $s3, 256
     j rotate_end
+    
+    rotate_L_type_4_left:
+    subi $t3, $s3, 4
+    addi $t2, $t3, 4
+    subi $t4, $t3, 128
+    subi $t1, $t3, 256
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
 
     rotate_L_type_1:
+    addi $t1, $s2, 4
+    jal Check_color
+    bne $t5, $zero, rotate_L_type_1_left
+    bne $t6, $zero, rotate_L_type_1_left
+    
     addi $s0, $s3, 4
     addi $s1, $s3, 8
     addi $s2, $s3, 128
     j rotate_end
     
+    rotate_L_type_1_left:
+    subi $t3, $s3, 4
+    addi $t1, $t3, 8
+    addi $t2, $t3, 128
+    addi $t4, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
     rotate_L_type_2:
+    subi $t1, $s2, 4
+    jal Check_color
+    bne $t5, $zero, rotate_L_type_2_right
+    bne $t6, $zero, rotate_L_type_2_right
+    
     addi $s0, $s3, 128
     addi $s1, $s3, 256
     subi $s2, $s3, 4
     j rotate_end
     
+    rotate_L_type_2_right:
+    addi $t3, $s3, 4
+    addi $t1, $t3, 256
+    subi $t2, $t3, 4
+    addi $t4, $t3, 128
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
     rotate_L_type_3:
+    subi $t1, $s2, 4
+    jal Check_color
+    bne $t5, $zero, rotate_L_type_3_right
+    bne $t6, $zero, rotate_L_type_3_right
+    
     subi $s0, $s3, 4
     subi $s1, $s3, 8
     subi $s2, $s3, 128
     j rotate_end
     
+    rotate_L_type_3_right:
+    addi $t3, $s3, 4
+    subi $t1, $t3, 8
+    subi $t2, $t3, 128
+    subi $t4, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
     
 rotate_J:
     subi $t1, $s3, 4
@@ -695,23 +893,107 @@ rotate_J:
     addi $t1, $s3, 4
     beq $t1, $s0, rotate_J_type_3 # check if L is type 3
     
-    # L is type 2
+    # J is type 2
     addi $s0, $s3, 4
     addi $s2, $s3, 128
     addi $s1, $s3, 256
     j rotate_end
 
     rotate_J_type_1:
+    addi $t1, $s3, 4
+    jal Check_color
+    bne $t5, $zero, rotate_J_type_1_two_left
+    bne $t6, $zero, rotate_J_type_1_two_left
+    
+    addi $t1, $s3, 8
+    jal Check_color
+    bne $t5, $zero, rotate_J_type_1_one_left
+    bne $t6, $zero, rotate_J_type_1_one_left
+    
     subi $s0, $s3, 128
     addi $s1, $s3, 8
     addi $s2, $s3, 4
     j rotate_end
     
+    rotate_J_type_1_two_left:
+    subi $t3, $s3, 8
+    subi $t4, $t3, 128
+    addi $t1, $t3, 8
+    addi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+    rotate_J_type_1_one_left:
+    subi $t3, $s3, 4
+    subi $t4, $t3, 128
+    addi $t1, $t3, 8
+    addi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+    
     rotate_J_type_3:
+    subi $t1, $s3, 4
+    jal Check_color
+    bne $t5, $zero, rotate_J_type_3_two_right
+    bne $t6, $zero, rotate_J_type_3_two_right
+    
+    subi $t1, $s3, 8
+    jal Check_color
+    bne $t5, $zero, rotate_J_type_3_one_right
+    bne $t6, $zero, rotate_J_type_3_one_right
+    
+    
     addi $s0, $s3, 128
     subi $s1, $s3, 8
     subi $s2, $s3, 4
     j rotate_end
+    
+    rotate_J_type_3_two_right:
+    addi $t3, $s3, 8
+    addi $t4, $t3, 128
+    subi $t1, $t3, 8
+    subi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
+    rotate_J_type_3_one_right:
+    
+    addi $t3, $s3, 4
+    addi $t4, $t3, 128
+    subi $t1, $t3, 8
+    subi $t2, $t3, 4
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
+    j rotate_end
+    
     
     rotate_J_type_4:
     subi $s0, $s3, 4
@@ -726,9 +1008,30 @@ rotate_T:
     beq $t1, $s3, rotate_T_type_4 # check if L is type 3
     
     # T is type 2
+    addi $t1, $s1, 4
+    jal Check_color
+    bne $t5, $zero, rotate_T_type_2_left
+    bne $t6, $zero, rotate_T_type_2_left
+    
     addi $s0, $s1, 4
     subi $s2, $s1, 4
     subi $s3, $s1, 128
+    j rotate_end
+    
+    rotate_T_type_2_left:
+    
+    subi $t1, $s1, 4
+    addi $t4, $t1, 4
+    subi $t2, $t1, 4
+    subi $t3, $t1, 128
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
     j rotate_end
 
     rotate_T_type_1:
@@ -744,9 +1047,30 @@ rotate_T:
     j rotate_end
     
     rotate_T_type_4:
+    subi $t1, $s1, 4
+    jal Check_color
+    bne $t5, $zero, rotate_T_type_4_right
+    bne $t6, $zero, rotate_T_type_4_right
+    
     addi $s2, $s1, 4
     addi $s3, $s1, 128
     subi $s0, $s1, 4
+    j rotate_end
+    
+    rotate_T_type_4_right:
+        
+    addi $t1, $s1, 4
+    subi $t4, $t1, 4
+    addi $t2, $t1, 4
+    addi $t3, $t1, 128
+    
+    jal Check_valid_position_left_right
+    
+    addi $s0, $t4, 0
+    addi $s1, $t1, 0
+    addi $s2, $t2, 0
+    addi $s3, $t3, 0
+    
     j rotate_end
     
 rotate_end:
@@ -788,6 +1112,19 @@ clear_borad:
     outer_end_clear:
         jr $ra                      # return to calling program
 
+# check $t1's colour, t5 will return colour in tetromino, t6 will return colour in wall
+Check_color:
+    # if not overlap, check if overlap with wall or landed tetrominoes
+    add $t5, $a3, $t1               # calculate the location of the leftest pixel in the ADDR_TETR
+    lw $t5, 0($t5)                  # load the color of this position in ADDR_TETR
+
+    add $t6, $s7, $t1               # calculate the location of the leftest pixel in the ADDR_WALL
+    lw $t6, 0($t6)                  # load the color of this position in ADDR_WALL
+    
+    jr $ra
+    
+
+    
     
 SKIP_FUNCTION:  
 
@@ -1473,6 +1810,21 @@ game_over:
     
     initialize_landed_end:
     
+    addi $t1, $zero, 4096
+    addi $t0, $zero, 0
+    addi $t5, $zero, 0x0
+    
+    initialize_grid_loop:
+    beq $t0, $t1, initialize_grid_end
+    add $t3, $t0, $s6   
+    sw $t5, 0($t3)
+    addi $t0, $t0, 4
+    j initialize_grid_loop
+    
+    initialize_grid_end:
+    
+    li $a1, 0x0
+    
     lw $a0, 4($s5) 
-    beq $a0, 0x72, main
+    beq $a0, 0x72, main_loop
     b restart
